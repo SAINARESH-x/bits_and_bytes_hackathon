@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { Corridor } from "@/lib/types";
+import type { RoadSegment } from "@/lib/types";
 
 /**
  * `ssr: false` keeps Leaflet off the server, which is what prevents the
@@ -23,10 +23,10 @@ const MapView = dynamic(
 );
 
 interface MapShellProps {
-  corridors: Corridor[];
+  segments: RoadSegment[];
   className?: string;
 }
 
-export function MapShell({ corridors, className }: MapShellProps) {
-  return <MapView corridors={corridors} className={className} />;
+export function MapShell({ segments, className }: MapShellProps) {
+  return <MapView segments={segments} className={className} />;
 }

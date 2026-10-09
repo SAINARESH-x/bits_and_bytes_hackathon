@@ -1,10 +1,1301 @@
 {
   "is_simulated": true,
-  "generated_at": "2026-10-10T00:00:00.000Z",
-  "note": "ALL DATA HERE IS SIMULATED. Fictional roads, generic department names. Real records arrive in M2.",
-  "departments": [],
-  "contractors": [],
-  "corridors": [],
-  "projects": [],
-  "citizen_reports": []
+  "generated_at": "2026-10-09T21:58:03.085Z",
+  "note": "ALL DATA IS SIMULATED. Fictional road names, generic department names, invented contractors. Dates are day offsets from today (0 = today, -70 = 70 days ago) so the demo never goes stale; lib/seed-dates.ts resolves them.",
+  "scenarios": [
+    "(a) Vasanth Nagar 1st Street: Roads resurfacing and Telecom fibre overlap in time — two departments, same segment.",
+    "(b) Kaveri Cross Road: road resurfaced 80 days ago, water main starts in 20 days = 60-day repeat dig.",
+    "(c) Thendral Main Street: drain project 3x past its planned end with three logged delay reasons (monsoon, material shortage, contractor delay).",
+    "(d) Amber Garden Road footpath marked completed, disputed by 4 citizens and confirmed by 1.",
+    "(e) One UNLISTED work report (T. Nagar service lane) with no matching project.",
+    "(f) FLAGSHIP: Amber Garden Road water main completed 70 days ago; Power Utility plans a cable starting in 21 days = 91-day repeat dig."
+  ],
+  "departments": [
+    {
+      "id": "a0000001-0000-4000-8000-000000000001",
+      "name": "Roads Department",
+      "code": "ROADS",
+      "is_simulated": true
+    },
+    {
+      "id": "a0000001-0000-4000-8000-000000000002",
+      "name": "Water Board",
+      "code": "WATER",
+      "is_simulated": true
+    },
+    {
+      "id": "a0000001-0000-4000-8000-000000000003",
+      "name": "Power Utility",
+      "code": "POWER",
+      "is_simulated": true
+    },
+    {
+      "id": "a0000001-0000-4000-8000-000000000004",
+      "name": "Storm-water Drains",
+      "code": "DRAINS",
+      "is_simulated": true
+    },
+    {
+      "id": "a0000001-0000-4000-8000-000000000005",
+      "name": "Telecom Fibre",
+      "code": "TELECOM",
+      "is_simulated": true
+    }
+  ],
+  "road_segments": [
+    {
+      "id": "b0000002-0000-4000-8000-000000000001",
+      "name": "Vasanth Nagar 1st Street",
+      "ward": "Nungambakkam",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.245,
+            13.069
+          ],
+          [
+            80.2462,
+            13.0698
+          ],
+          [
+            80.2474,
+            13.0706
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000002",
+      "name": "Kaveri Cross Road",
+      "ward": "T. Nagar",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.2398,
+            13.0415
+          ],
+          [
+            80.241,
+            13.0423
+          ],
+          [
+            80.2422,
+            13.0431
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000003",
+      "name": "Thendral Main Street",
+      "ward": "Mylapore",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.262,
+            13.0336
+          ],
+          [
+            80.2633,
+            13.0344
+          ],
+          [
+            80.2646,
+            13.0353
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000004",
+      "name": "Amber Garden Road",
+      "ward": "Kilpauk",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.2535,
+            13.0745
+          ],
+          [
+            80.2548,
+            13.0753
+          ],
+          [
+            80.2561,
+            13.0761
+          ],
+          [
+            80.2573,
+            13.077
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000005",
+      "name": "Selva Complex Link Road",
+      "ward": "Aminjikarai",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.224,
+            13.0812
+          ],
+          [
+            80.2253,
+            13.082
+          ],
+          [
+            80.2266,
+            13.0829
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000006",
+      "name": "Nilgiri Avenue",
+      "ward": "Anna Nagar",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.2105,
+            13.0851
+          ],
+          [
+            80.2118,
+            13.0859
+          ],
+          [
+            80.2131,
+            13.0868
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000007",
+      "name": "Priya Nagar Extension",
+      "ward": "Vadapalani",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.2155,
+            13.0512
+          ],
+          [
+            80.2168,
+            13.0521
+          ],
+          [
+            80.2181,
+            13.053
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000008",
+      "name": "Santhosh Street",
+      "ward": "Ashok Nagar",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.221,
+            13.0395
+          ],
+          [
+            80.2223,
+            13.0404
+          ],
+          [
+            80.2236,
+            13.0412
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000009",
+      "name": "Lakshmi Villas Road",
+      "ward": "Royapettah",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.2555,
+            13.0525
+          ],
+          [
+            80.2568,
+            13.0534
+          ],
+          [
+            80.2581,
+            13.0543
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000010",
+      "name": "Venkateswara Layout 3rd Cross",
+      "ward": "Mandaveli",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.2688,
+            13.0382
+          ],
+          [
+            80.2701,
+            13.0391
+          ],
+          [
+            80.2714,
+            13.0399
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000011",
+      "name": "Rose Garden Link Road",
+      "ward": "Chetpet",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.243,
+            13.0795
+          ],
+          [
+            80.2443,
+            13.0804
+          ],
+          [
+            80.2456,
+            13.0812
+          ]
+        ]
+      },
+      "is_simulated": true
+    },
+    {
+      "id": "b0000002-0000-4000-8000-000000000012",
+      "name": "Anandapuram Bypass Road",
+      "ward": "Egmore",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            80.258,
+            13.0705
+          ],
+          [
+            80.2593,
+            13.0713
+          ],
+          [
+            80.2606,
+            13.0722
+          ]
+        ]
+      },
+      "is_simulated": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "c0000003-0000-4000-8000-000000000001",
+      "title": "Carriageway resurfacing, Vasanth Nagar 1st Street",
+      "purpose": "Full-depth resurfacing of a potholed carriageway, 620 m.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Velan Constructions",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000001",
+      "planned_start": -20,
+      "planned_end": 20,
+      "actual_start": -20,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 4200000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000002",
+      "title": "Fibre duct laying, Vasanth Nagar 1st Street",
+      "purpose": "Trench and lay 48-core fibre duct along the same stretch.",
+      "project_type": "fibre",
+      "department_id": "a0000001-0000-4000-8000-000000000005",
+      "contractor_name": "Skyline Infra Works",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000001",
+      "planned_start": -10,
+      "planned_end": 15,
+      "actual_start": -10,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 1800000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000003",
+      "title": "Resurfacing, Kaveri Cross Road",
+      "purpose": "Overlay and kerb repair after repeated utility cuts.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Meridian Roadworks",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000002",
+      "planned_start": -170,
+      "planned_end": -80,
+      "actual_start": -170,
+      "actual_end": -80,
+      "status": "completed",
+      "budget_inr": 3600000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000004",
+      "title": "Water main replacement, Kaveri Cross Road",
+      "purpose": "Replace a 30-year-old cast-iron main prone to bursts.",
+      "project_type": "water_pipeline",
+      "department_id": "a0000001-0000-4000-8000-000000000002",
+      "contractor_name": "AquaCore Builders",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000002",
+      "planned_start": -20,
+      "planned_end": 25,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 5100000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000005",
+      "title": "Drain desilting and cover replacement, Thendral Main Street",
+      "purpose": "Desilt 800 m of box drain and replace broken covers.",
+      "project_type": "drain",
+      "department_id": "a0000001-0000-4000-8000-000000000004",
+      "contractor_name": "Coromandel Drainage",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000003",
+      "planned_start": -150,
+      "planned_end": -100,
+      "actual_start": -150,
+      "actual_end": null,
+      "status": "stalled",
+      "budget_inr": 2400000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000006",
+      "title": "Footpath rebuilding, Amber Garden Road",
+      "purpose": "Rebuild 400 m of footpath with tactile paving.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Velan Constructions",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000004",
+      "planned_start": -90,
+      "planned_end": -45,
+      "actual_start": -90,
+      "actual_end": -45,
+      "status": "completed",
+      "budget_inr": 1500000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000007",
+      "title": "Water pipeline replacement, Amber Garden Road",
+      "purpose": "Replace corroded DN200 main serving ~400 households.",
+      "project_type": "water_pipeline",
+      "department_id": "a0000001-0000-4000-8000-000000000002",
+      "contractor_name": "AquaCore Builders",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000004",
+      "planned_start": -130,
+      "planned_end": -70,
+      "actual_start": -130,
+      "actual_end": -70,
+      "status": "completed",
+      "budget_inr": 4750000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000008",
+      "title": "Underground power cable, Amber Garden Road",
+      "purpose": "Lay 11kV XLPE cable to remove an overhead bundle.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000004",
+      "planned_start": 21,
+      "planned_end": 45,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 3200000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000009",
+      "title": "Storm drain cover repair, Selva Complex Link Road",
+      "purpose": "Replace 60 m of broken drain covers.",
+      "project_type": "drain",
+      "department_id": "a0000001-0000-4000-8000-000000000004",
+      "contractor_name": "Coromandel Drainage",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000005",
+      "planned_start": -25,
+      "planned_end": 10,
+      "actual_start": -25,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 900000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000010",
+      "title": "Broadband rollout, Selva Complex Link Road",
+      "purpose": "FTTH drop installation for 220 homes.",
+      "project_type": "fibre",
+      "department_id": "a0000001-0000-4000-8000-000000000005",
+      "contractor_name": "Skyline Infra Works",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000005",
+      "planned_start": -210,
+      "planned_end": -180,
+      "actual_start": -210,
+      "actual_end": -180,
+      "status": "completed",
+      "budget_inr": 1200000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000011",
+      "title": "Shoulder strengthening, Nilgiri Avenue",
+      "purpose": "Strengthen failing shoulders before monsoon.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Meridian Roadworks",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000006",
+      "planned_start": 30,
+      "planned_end": 65,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 2800000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000012",
+      "title": "Pole-to-underground conversion, Nilgiri Avenue",
+      "purpose": "Convert 14 overhead poles to underground.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000006",
+      "planned_start": -60,
+      "planned_end": -20,
+      "actual_start": -60,
+      "actual_end": null,
+      "status": "stalled",
+      "budget_inr": 2100000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000013",
+      "title": "Service line extension, Priya Nagar Extension",
+      "purpose": "Extend supply to 90 new connections.",
+      "project_type": "water_pipeline",
+      "department_id": "a0000001-0000-4000-8000-000000000002",
+      "contractor_name": "AquaCore Builders",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000007",
+      "planned_start": -190,
+      "planned_end": -150,
+      "actual_start": -190,
+      "actual_end": -150,
+      "status": "completed",
+      "budget_inr": 1750000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000014",
+      "title": "Gully inlet reconstruction, Priya Nagar Extension",
+      "purpose": "Rebuild 9 sunken gully inlets.",
+      "project_type": "drain",
+      "department_id": "a0000001-0000-4000-8000-000000000004",
+      "contractor_name": "Coromandel Drainage",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000007",
+      "planned_start": 12,
+      "planned_end": 34,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 640000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000015",
+      "title": "Fibre backhaul, Santhosh Street",
+      "purpose": "Cancelled: right-of-way not granted.",
+      "project_type": "fibre",
+      "department_id": "a0000001-0000-4000-8000-000000000005",
+      "contractor_name": "Skyline Infra Works",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000008",
+      "planned_start": -100,
+      "planned_end": -70,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "cancelled",
+      "budget_inr": 1100000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000016",
+      "title": "Patch repairs, Santhosh Street",
+      "purpose": "Pothole patching across 300 m.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Velan Constructions",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000008",
+      "planned_start": -120,
+      "planned_end": -95,
+      "actual_start": -120,
+      "actual_end": -95,
+      "status": "completed",
+      "budget_inr": 480000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000017",
+      "title": "Feeder upgrade, Lakshmi Villas Road",
+      "purpose": "Upgrade 11kV feeder to reduce evening outages.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000009",
+      "planned_start": -35,
+      "planned_end": 25,
+      "actual_start": -35,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 2950000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000018",
+      "title": "Valve chamber repair, Lakshmi Villas Road",
+      "purpose": "Rebuild two leaking valve chambers.",
+      "project_type": "water_pipeline",
+      "department_id": "a0000001-0000-4000-8000-000000000002",
+      "contractor_name": "AquaCore Builders",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000009",
+      "planned_start": 5,
+      "planned_end": 18,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 380000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000019",
+      "title": "Silt removal, Venkateswara Layout 3rd Cross",
+      "purpose": "Annual desilting of 500 m channel.",
+      "project_type": "drain",
+      "department_id": "a0000001-0000-4000-8000-000000000004",
+      "contractor_name": "Coromandel Drainage",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000010",
+      "planned_start": -160,
+      "planned_end": -130,
+      "actual_start": -160,
+      "actual_end": -130,
+      "status": "completed",
+      "budget_inr": 720000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000020",
+      "title": "Speed-table installation, Venkateswara Layout 3rd Cross",
+      "purpose": "Two speed tables near the school gate.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Velan Constructions",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000010",
+      "planned_start": 40,
+      "planned_end": 55,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 310000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000021",
+      "title": "Duct laying, Rose Garden Link Road",
+      "purpose": "Duct for a future 96-core ribbon cable.",
+      "project_type": "fibre",
+      "department_id": "a0000001-0000-4000-8000-000000000005",
+      "contractor_name": "Skyline Infra Works",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000011",
+      "planned_start": -15,
+      "planned_end": 30,
+      "actual_start": -15,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 1450000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000022",
+      "title": "Leak detection survey, Rose Garden Link Road",
+      "purpose": "Acoustic survey of 700 m main.",
+      "project_type": "water_pipeline",
+      "department_id": "a0000001-0000-4000-8000-000000000002",
+      "contractor_name": "AquaCore Builders",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000011",
+      "planned_start": -85,
+      "planned_end": -75,
+      "actual_start": -85,
+      "actual_end": -75,
+      "status": "completed",
+      "budget_inr": 260000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000023",
+      "title": "Transformer bay civil works, Rose Garden Link Road",
+      "purpose": "Civil bay for a 250 kVA transformer.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000011",
+      "planned_start": -70,
+      "planned_end": -30,
+      "actual_start": -70,
+      "actual_end": null,
+      "status": "stalled",
+      "budget_inr": 890000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000024",
+      "title": "Junction improvement, Anandapuram Bypass Road",
+      "purpose": "Widen the junction and add a right-turn lane.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Meridian Roadworks",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000012",
+      "planned_start": 55,
+      "planned_end": 110,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 6800000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000025",
+      "title": "Cross-drain culvert, Anandapuram Bypass Road",
+      "purpose": "Replace a failed 600 mm culvert.",
+      "project_type": "drain",
+      "department_id": "a0000001-0000-4000-8000-000000000004",
+      "contractor_name": "Coromandel Drainage",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000012",
+      "planned_start": -45,
+      "planned_end": 20,
+      "actual_start": -45,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 2300000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000026",
+      "title": "Middle-mile fibre, Anandapuram Bypass Road",
+      "purpose": "Cancelled: merged into the junction package.",
+      "project_type": "fibre",
+      "department_id": "a0000001-0000-4000-8000-000000000005",
+      "contractor_name": "Skyline Infra Works",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000012",
+      "planned_start": -50,
+      "planned_end": -10,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "cancelled",
+      "budget_inr": 3400000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000027",
+      "title": "Street-light cabling, Thendral Main Street",
+      "purpose": "Underground cabling for 22 street lights.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000003",
+      "planned_start": -140,
+      "planned_end": -115,
+      "actual_start": -140,
+      "actual_end": -115,
+      "status": "completed",
+      "budget_inr": 560000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000028",
+      "title": "Hydrant replacement, Thendral Main Street",
+      "purpose": "Replace four seized fire hydrants.",
+      "project_type": "water_pipeline",
+      "department_id": "a0000001-0000-4000-8000-000000000002",
+      "contractor_name": "AquaCore Builders",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000003",
+      "planned_start": 8,
+      "planned_end": 16,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 240000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000029",
+      "title": "Drain jetting, Kaveri Cross Road",
+      "purpose": "High-pressure jetting of 400 m drain.",
+      "project_type": "drain",
+      "department_id": "a0000001-0000-4000-8000-000000000004",
+      "contractor_name": "Coromandel Drainage",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000002",
+      "planned_start": -110,
+      "planned_end": -104,
+      "actual_start": -110,
+      "actual_end": -104,
+      "status": "completed",
+      "budget_inr": 190000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000030",
+      "title": "Service cable relocation, Vasanth Nagar 1st Street",
+      "purpose": "Relocate low-tension service cables clear of the resurfacing.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000001",
+      "planned_start": 35,
+      "planned_end": 60,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 780000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000031",
+      "title": "5G small-cell fibre, Amber Garden Road",
+      "purpose": "Feed fibre for three small-cell poles.",
+      "project_type": "fibre",
+      "department_id": "a0000001-0000-4000-8000-000000000005",
+      "contractor_name": "Skyline Infra Works",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000004",
+      "planned_start": 60,
+      "planned_end": 90,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 1050000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000032",
+      "title": "Flood-prone low-point works, Nilgiri Avenue",
+      "purpose": "Raise two chronic flood points.",
+      "project_type": "drain",
+      "department_id": "a0000001-0000-4000-8000-000000000004",
+      "contractor_name": "Coromandel Drainage",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000006",
+      "planned_start": -95,
+      "planned_end": -60,
+      "actual_start": -95,
+      "actual_end": null,
+      "status": "stalled",
+      "budget_inr": 1340000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000033",
+      "title": "Meter chamber renewal, Santhosh Street",
+      "purpose": "Renew 35 communal meter chambers.",
+      "project_type": "water_pipeline",
+      "department_id": "a0000001-0000-4000-8000-000000000002",
+      "contractor_name": "AquaCore Builders",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000008",
+      "planned_start": -12,
+      "planned_end": 14,
+      "actual_start": -12,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 420000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000034",
+      "title": "Zebra crossing refresh, Lakshmi Villas Road",
+      "purpose": "Repaint four crossings with high-build paint.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Velan Constructions",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000009",
+      "planned_start": -55,
+      "planned_end": -50,
+      "actual_start": -55,
+      "actual_end": -50,
+      "status": "completed",
+      "budget_inr": 140000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000035",
+      "title": "Cable TV duct sharing, Venkateswara Layout 3rd Cross",
+      "purpose": "Share existing duct for coax upgrades.",
+      "project_type": "fibre",
+      "department_id": "a0000001-0000-4000-8000-000000000005",
+      "contractor_name": "Skyline Infra Works",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000010",
+      "planned_start": 18,
+      "planned_end": 42,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 660000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000036",
+      "title": "Undergrounding, Anandapuram Bypass Road",
+      "purpose": "Underground the entire 1.2 km stretch.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000012",
+      "planned_start": -30,
+      "planned_end": 70,
+      "actual_start": -30,
+      "actual_end": null,
+      "status": "in_progress",
+      "budget_inr": 5400000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000037",
+      "title": "Bus bay construction, Selva Complex Link Road",
+      "purpose": "Two recessed bus bays with kerb ramps.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Meridian Roadworks",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000005",
+      "planned_start": 25,
+      "planned_end": 58,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 1980000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000038",
+      "title": "Resurfacing, Priya Nagar Extension",
+      "purpose": "Full resurfacing after utility cuts.",
+      "project_type": "road",
+      "department_id": "a0000001-0000-4000-8000-000000000001",
+      "contractor_name": "Meridian Roadworks",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000007",
+      "planned_start": -230,
+      "planned_end": -200,
+      "actual_start": -230,
+      "actual_end": -200,
+      "status": "completed",
+      "budget_inr": 2650000,
+      "is_simulated": true
+    },
+    {
+      "id": "c0000003-0000-4000-8000-000000000039",
+      "title": "Cable cutting, Priya Nagar Extension",
+      "purpose": "Lay a 11kV run under the newly resurfaced road.",
+      "project_type": "power_cable",
+      "department_id": "a0000001-0000-4000-8000-000000000003",
+      "contractor_name": "Starline Electricals",
+      "road_segment_id": "b0000002-0000-4000-8000-000000000007",
+      "planned_start": -150,
+      "planned_end": -120,
+      "actual_start": null,
+      "actual_end": null,
+      "status": "planned",
+      "budget_inr": 1600000,
+      "is_simulated": true
+    }
+  ],
+  "project_updates": [
+    {
+      "id": "d0000004-0000-4000-8000-000000000001",
+      "project_id": "c0000003-0000-4000-8000-000000000003",
+      "status": "completed",
+      "note": "Resurfacing complete; 24-month defect liability period started.",
+      "delay_reason": null,
+      "new_planned_end": null,
+      "is_simulated": true,
+      "created_at": -80
+    },
+    {
+      "id": "d0000004-0000-4000-8000-000000000002",
+      "project_id": "c0000003-0000-4000-8000-000000000005",
+      "status": "planned",
+      "note": "Work order issued.",
+      "delay_reason": null,
+      "new_planned_end": null,
+      "is_simulated": true,
+      "created_at": -150
+    },
+    {
+      "id": "d0000004-0000-4000-8000-000000000003",
+      "project_id": "c0000003-0000-4000-8000-000000000005",
+      "status": "stalled",
+      "note": "Monsoon flooding halted excavation.",
+      "delay_reason": "monsoon",
+      "new_planned_end": -70,
+      "is_simulated": true,
+      "created_at": -112
+    },
+    {
+      "id": "d0000004-0000-4000-8000-000000000004",
+      "project_id": "c0000003-0000-4000-8000-000000000005",
+      "status": "stalled",
+      "note": "Precast covers delayed at the supplier.",
+      "delay_reason": "material_shortage",
+      "new_planned_end": -40,
+      "is_simulated": true,
+      "created_at": -78
+    },
+    {
+      "id": "d0000004-0000-4000-8000-000000000005",
+      "project_id": "c0000003-0000-4000-8000-000000000005",
+      "status": "stalled",
+      "note": "Contractor mobilised only half the crew.",
+      "delay_reason": "contractor_delay",
+      "new_planned_end": -5,
+      "is_simulated": true,
+      "created_at": -30
+    },
+    {
+      "id": "d0000004-0000-4000-8000-000000000006",
+      "project_id": "c0000003-0000-4000-8000-000000000006",
+      "status": "completed",
+      "note": "Marked complete after joint inspection.",
+      "delay_reason": null,
+      "new_planned_end": null,
+      "is_simulated": true,
+      "created_at": -45
+    },
+    {
+      "id": "d0000004-0000-4000-8000-000000000007",
+      "project_id": "c0000003-0000-4000-8000-000000000007",
+      "status": "completed",
+      "note": "Backfill compacted, road restored by Roads Department.",
+      "delay_reason": null,
+      "new_planned_end": null,
+      "is_simulated": true,
+      "created_at": -70
+    }
+  ],
+  "citizen_reports": [
+    {
+      "id": "e0000005-0000-4000-8000-000000000001",
+      "project_id": "c0000003-0000-4000-8000-000000000006",
+      "report_type": "damaged_structure",
+      "description": "Tactile tiles already lifting at the ramp near the bus stop.",
+      "photo_url": null,
+      "lat": 13.075,
+      "lng": 80.2552,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -33
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000002",
+      "project_id": null,
+      "report_type": "unlisted_digging",
+      "description": "Cable trench opened across the service lane with no signboard or notice. Been open four days.",
+      "photo_url": null,
+      "lat": 13.0409,
+      "lng": 80.2403,
+      "is_unlisted_work": true,
+      "is_simulated": true,
+      "created_at": -4
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000003",
+      "project_id": "c0000003-0000-4000-8000-000000000005",
+      "report_type": "pothole",
+      "description": "New pothole opening at the junction end.",
+      "photo_url": null,
+      "lat": 13.0755,
+      "lng": 80.2568,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -12
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000004",
+      "project_id": "c0000003-0000-4000-8000-000000000009",
+      "report_type": "open_trench",
+      "description": "Trench left unfilled overnight with no barriers.",
+      "photo_url": null,
+      "lat": 13.0348,
+      "lng": 80.264,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -8
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000005",
+      "project_id": "c0000003-0000-4000-8000-000000000014",
+      "report_type": "blocked_drain",
+      "description": "Silt and construction debris blocking the inlet.",
+      "photo_url": null,
+      "lat": 13.082,
+      "lng": 80.226,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -20
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000006",
+      "project_id": "c0000003-0000-4000-8000-000000000018",
+      "report_type": "waterlogging",
+      "description": "Water pools across half the carriageway after rain.",
+      "photo_url": null,
+      "lat": 13.039,
+      "lng": 80.223,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -16
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000007",
+      "project_id": "c0000003-0000-4000-8000-000000000022",
+      "report_type": "debris_obstruction",
+      "description": "Excavated spoil heaped on the footpath.",
+      "photo_url": null,
+      "lat": 13.0805,
+      "lng": 80.245,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -6
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000008",
+      "project_id": "c0000003-0000-4000-8000-000000000026",
+      "report_type": "unsafe_opening",
+      "description": "Open junction box with a loose cover, no reflector.",
+      "photo_url": null,
+      "lat": 13.053,
+      "lng": 80.2575,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -3
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000009",
+      "project_id": "c0000003-0000-4000-8000-000000000001",
+      "report_type": "pothole",
+      "description": "Surface breaking up where the fibre trench was backfilled.",
+      "photo_url": null,
+      "lat": 13.0692,
+      "lng": 80.2458,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -5
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000010",
+      "project_id": "c0000003-0000-4000-8000-000000000003",
+      "report_type": "open_trench",
+      "description": "Drain trench barricades pushed into the walking lane.",
+      "photo_url": null,
+      "lat": 13.034,
+      "lng": 80.2628,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -9
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000011",
+      "project_id": "c0000003-0000-4000-8000-000000000007",
+      "report_type": "other",
+      "description": "Night work noise past 11 pm, no advance notice to residents.",
+      "photo_url": null,
+      "lat": 13.0815,
+      "lng": 80.2248,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -14
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000012",
+      "project_id": "c0000003-0000-4000-8000-000000000012",
+      "report_type": "damaged_structure",
+      "description": "Newly laid surface already rutted at the bus stop.",
+      "photo_url": null,
+      "lat": 13.086,
+      "lng": 80.2118,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -18
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000013",
+      "project_id": "c0000003-0000-4000-8000-000000000017",
+      "report_type": "blocked_drain",
+      "description": "Cement washout from the site has set inside the channel.",
+      "photo_url": null,
+      "lat": 13.0388,
+      "lng": 80.2695,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -7
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000014",
+      "project_id": "c0000003-0000-4000-8000-000000000020",
+      "report_type": "debris_obstruction",
+      "description": "Steel plates left across the cycle track.",
+      "photo_url": null,
+      "lat": 13.071,
+      "lng": 80.2598,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -2
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000015",
+      "project_id": "c0000003-0000-4000-8000-000000000024",
+      "report_type": "pothole",
+      "description": "Shoulder collapsing where the cable trench was filled.",
+      "photo_url": null,
+      "lat": 13.052,
+      "lng": 80.2175,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -11
+    },
+    {
+      "id": "e0000005-0000-4000-8000-000000000016",
+      "project_id": "c0000003-0000-4000-8000-000000000030",
+      "report_type": "unsafe_opening",
+      "description": "Survey pit uncovered and unlit after dark.",
+      "photo_url": null,
+      "lat": 13.0718,
+      "lng": 80.26,
+      "is_unlisted_work": false,
+      "is_simulated": true,
+      "created_at": -1
+    }
+  ],
+  "verifications": [
+    {
+      "id": "f0000006-0000-4000-8000-000000000001",
+      "project_id": "c0000003-0000-4000-8000-000000000006",
+      "vote": "dispute",
+      "device_id": "90000007-0000-4000-8000-000000000021",
+      "is_simulated": true,
+      "created_at": -40
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000002",
+      "project_id": "c0000003-0000-4000-8000-000000000006",
+      "vote": "dispute",
+      "device_id": "90000007-0000-4000-8000-000000000022",
+      "is_simulated": true,
+      "created_at": -36
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000003",
+      "project_id": "c0000003-0000-4000-8000-000000000006",
+      "vote": "dispute",
+      "device_id": "90000007-0000-4000-8000-000000000023",
+      "is_simulated": true,
+      "created_at": -22
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000004",
+      "project_id": "c0000003-0000-4000-8000-000000000006",
+      "vote": "dispute",
+      "device_id": "90000007-0000-4000-8000-000000000024",
+      "is_simulated": true,
+      "created_at": -9
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000005",
+      "project_id": "c0000003-0000-4000-8000-000000000006",
+      "vote": "confirm",
+      "device_id": "90000007-0000-4000-8000-000000000025",
+      "is_simulated": true,
+      "created_at": -15
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000006",
+      "project_id": "c0000003-0000-4000-8000-000000000007",
+      "vote": "confirm",
+      "device_id": "90000007-0000-4000-8000-000000000031",
+      "is_simulated": true,
+      "created_at": -60
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000007",
+      "project_id": "c0000003-0000-4000-8000-000000000005",
+      "vote": "confirm",
+      "device_id": "90000007-0000-4000-8000-000000000041",
+      "is_simulated": true,
+      "created_at": -28
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000008",
+      "project_id": "c0000003-0000-4000-8000-000000000009",
+      "vote": "dispute",
+      "device_id": "90000007-0000-4000-8000-000000000042",
+      "is_simulated": true,
+      "created_at": -11
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000009",
+      "project_id": "c0000003-0000-4000-8000-000000000013",
+      "vote": "confirm",
+      "device_id": "90000007-0000-4000-8000-000000000043",
+      "is_simulated": true,
+      "created_at": -19
+    },
+    {
+      "id": "f0000006-0000-4000-8000-000000000010",
+      "project_id": "c0000003-0000-4000-8000-000000000021",
+      "vote": "confirm",
+      "device_id": "90000007-0000-4000-8000-000000000044",
+      "is_simulated": true,
+      "created_at": -5
+    }
+  ]
 }
