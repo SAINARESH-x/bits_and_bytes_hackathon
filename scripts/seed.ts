@@ -20,6 +20,7 @@
 import { readFileSync } from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { resolveSeedDate, resolveSeedDateOptional } from "../lib/seed-dates";
+import { NOOP_WEBSOCKET_TRANSPORT } from "../lib/supabase/transport";
 import {
   citizenReportInputSchema,
   projectInputSchema,
@@ -28,6 +29,40 @@ import {
 import type { SeedData, SeedDate } from "../lib/types";
 
 const RESET = process.argv.includes("--reset");
+
+/**
+ * Minimal .env.local loader.
+ *
+ * Node's own `--env-file` flag needs >=20.6, but this repo also has to run on
+ * the team's Node 18 machines, so the file is parsed here rather than by a
+ * flag or an added dotenv dependency. A value already present in the real
+ * environment always wins, so exported values and CI secrets are never
+ * overwritten.
+ */
+function loadEnvFile(filename: string): void {
+  let raw: string;
+  try {
+    raw = readFileSync(filename, "utf8");
+  } catch {
+    return; // missing file is fine — the message below explains what is needed
+  }
+
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (value.startsWith('"') || value.startsWith("'")) value = value.slice(1, -1);
+    if (key && !(key in process.env)) process.env[key] = value;
+  }
+}
+
+loadEnvFile(".env.local");
+loadEnvFile(".env");
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -49,6 +84,10 @@ if (!url || !serviceKey) {
 
 const client: SupabaseClient = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
+  // Realtime is never used here, but supabase-js always constructs a
+  // RealtimeClient that needs a global WebSocket (Node 22+ only) — without
+  // this, createClient throws on Node 18/20 before seeding can start.
+  realtime: { transport: NOOP_WEBSOCKET_TRANSPORT },
 });
 
 // Insert order respects foreign keys.
