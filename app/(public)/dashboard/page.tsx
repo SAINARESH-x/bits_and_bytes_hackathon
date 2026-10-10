@@ -9,11 +9,15 @@ import { DEFAULT_REPEAT_DIG_WINDOW_DAYS } from "@/lib/clash";
 import { loadDashboardData } from "@/lib/dashboard";
 import { STATUS_LABELS, formatDate } from "@/lib/format";
 
-export const metadata = { title: "Dashboard — DigSync" };
-
-// The data-mode selection reads env at request time, so this page must never
-// be statically cached at build time.
+// The data-mode selection reads env at request time, and the page reaches the
+// store on every request, so this route must never be served from the Next.js
+// Data/Full Route Cache. `force-dynamic` already opts out; `revalidate = 0`
+// underlines it for anyone reading the file — /dashboard always re-renders
+// and reads whatever the store holds right now.
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export const metadata = { title: "Dashboard — DigSync" };
 
 /**
  * Transparency dashboard (PLAN.md M7).
