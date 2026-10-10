@@ -218,10 +218,20 @@ async function main() {
     check("popup shows planned and actual dates", /Planned/i.test(popup) && /Actual/i.test(popup));
     check("popup shows the status", /Status/i.test(popup));
     check("popup has a View details link", /View details/.test(popup));
+    // The clash link (when the road is flagged) sits above it, so select by
+    // text rather than by position.
     const href = await evaluate(
-      `document.querySelector('.leaflet-popup-content a')?.getAttribute('href') ?? null`,
+      `[...document.querySelectorAll('.leaflet-popup-content a')]
+        .find(a => a.textContent.includes('View details'))?.getAttribute('href') ?? null`,
     );
     check("View details points at the project", Boolean(href && href.startsWith("/projects/")), String(href));
+    const clashHref = await evaluate(
+      `[...document.querySelectorAll('.leaflet-popup-content a')]
+        .find(a => a.textContent.includes('review'))?.getAttribute('href') ?? null`,
+    );
+    if (clashHref) {
+      check("a flagged road's popup links to the clash board", clashHref === "/clashes", String(clashHref));
+    }
   }
 
   // --- /map: legend is not colour-only --------------------------------
@@ -368,8 +378,9 @@ async function main() {
     const text = await evaluate(`document.body.innerText`);
     check("shows the timeline section", text.includes("Planned vs actual"));
     check("shows a delay figure", /past planned end|On plan|Completed on plan|No dates/.test(text));
-    check("shows the Clash alerts placeholder",
-      text.includes("Clash alerts") && text.includes("Coming in"));
+    check("shows the Clash alerts section",
+      text.includes("Clash alerts") &&
+        !text.includes("The detection engine lands in a later milestone"));
     check("shows the Citizen verification placeholder",
       text.includes("Citizen verification") && text.includes("Coming in"));
     check("budget is labelled simulated", text.includes("(simulated)"));
@@ -379,6 +390,85 @@ async function main() {
       .filter(s => s.style.width && parseFloat(s.style.width) > 0).length`);
     check("timeline bars are drawn", bars >= 1, `found ${bars}`);
   }
+
+  // --- clash board ------------------------------------------------------
+  console.log("\n/clashes");
+  await goto(`${BASE}/clashes`);
+
+  const boardText = await evaluate(`document.body.innerText`);
+  check("explains why each pair is flagged", /Why flagged/i.test(boardText));
+  check("proposes coordination, not just a warning",
+    /Proposed coordination/i.test(boardText));
+  check("labels the money as simulated", /simulated/i.test(boardText));
+
+  const cardCount = await evaluate(
+    `document.querySelectorAll('article[id^="clash-"]').length`,
+  );
+  check("renders at least one clash card", cardCount >= 1, `found ${cardCount}`);
+
+  // The severity filter is client-side: it must narrow the board in place.
+  const pressFilter = (label) => `[...document.querySelectorAll('[aria-label="Filter by severity"] button')]
+    .find(b => b.innerText.startsWith(${JSON.stringify(label)})).click()`;
+  const cardSelector = `document.querySelectorAll('article[id^="clash-"]').length`;
+
+  await evaluate(pressFilter("High"));
+  await new Promise((r) => setTimeout(r, 400));
+  const highOnly = await evaluate(cardSelector);
+  check("the severity filter narrows the board without a reload",
+    highOnly > 0 && highOnly < cardCount, `${cardCount} -> ${highOnly}`);
+  check("the pressed filter reports itself pressed",
+    await evaluate(`[...document.querySelectorAll('[aria-label="Filter by severity"] button')]
+      .find(b => b.innerText.startsWith('High')).getAttribute('aria-pressed') === 'true'`));
+  check("the filter did not touch the URL",
+    !(await evaluate(`location.search`)).includes("severity"),
+    await evaluate(`location.search`));
+
+  await evaluate(pressFilter("All"));
+  await new Promise((r) => setTimeout(r, 400));
+  check("clearing the filter restores every card",
+    (await evaluate(cardSelector)) === cardCount);
+
+  // The Refresh button is the one path that goes through GET /api/clashes.
+  const refreshError = await evaluate(`(async () => {
+    const btn = [...document.querySelectorAll('button')]
+      .find(b => b.innerText.includes('Refresh from the API'));
+    if (!btn) return 'no refresh button';
+    btn.click();
+    await new Promise(r => setTimeout(r, 2000));
+    return document.body.innerText.includes('Could not refresh') ? 'error banner' : null;
+  })()`);
+  check("refreshing through the API succeeds", refreshError === null, String(refreshError));
+  check("the board survives the refresh",
+    (await evaluate(cardSelector)) === cardCount);
+
+  // The per-clash map is mounted lazily, only once its card is opened and in
+  // view — 38 tile-loading maps up front would be a tile-server stampede.
+  const opened = await evaluate(`(() => {
+    const details = document.querySelector('article[id^="clash-"] details');
+    if (!details) return false;
+    details.open = true;
+    details.scrollIntoView({ block: 'center' });
+    return true;
+  })()`);
+  check("clash cards expose a map toggle", opened);
+  if (opened) {
+    const miniMaps = await waitFor(
+      `document.querySelectorAll('article[id^="clash-"] .leaflet-container').length`,
+      12_000,
+    );
+    check("opening a clash map mounts Leaflet", miniMaps >= 1, `found ${miniMaps}`);
+  }
+
+  // --- clash badges on the map -----------------------------------------
+  console.log("\nclash badges on /map");
+  await goto(`${BASE}/map`);
+  const badges = await waitFor(`document.querySelectorAll('.clash-marker').length`, 12_000);
+  check("flagged roads are badged on the map", badges > 0, `found ${badges}`);
+  check("each badge names itself for screen readers",
+    await evaluate(`[...document.querySelectorAll('.clash-marker')].every(
+      e => e.getAttribute('role') === 'img' && /clash alert/.test(e.getAttribute('aria-label') ?? ''))`));
+  check("the map points at the clash board",
+    (await evaluate(`document.body.innerText`)).includes("Open the clash board"));
 
   console.log(`\n${pass} passed, ${fail} failed\n`);
 }

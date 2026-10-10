@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { MapScreen } from "@/components/map-screen";
 import { MapSkeleton } from "@/components/states";
+import { detectClashes } from "@/lib/clash";
 import { loadRegistry } from "@/lib/data";
 
 export const metadata = { title: "Map — DigSync" };
@@ -13,15 +14,25 @@ export const dynamic = "force-dynamic";
  * Server shell: fetch once, hand plain serialisable arrays to the client.
  * Filtering happens client-side from the query string — see map-screen.tsx.
  *
+ * The clash board is computed here too, from the same rows, so the badges on
+ * the lines stay put while the viewer filters (the filter must not change
+ * whether a road is flagged as clashing).
+ *
  * Suspense is also what keeps `useSearchParams` legal here; without it Next
  * asks for a boundary at build time.
  */
 export default async function MapPage() {
   const { projects, segments, departments } = await loadRegistry();
+  const { clashes } = detectClashes(projects, segments);
 
   return (
     <Suspense fallback={<MapSkeleton />}>
-      <MapScreen projects={projects} segments={segments} departments={departments} />
+      <MapScreen
+        projects={projects}
+        segments={segments}
+        departments={departments}
+        clashes={clashes}
+      />
     </Suspense>
   );
 }

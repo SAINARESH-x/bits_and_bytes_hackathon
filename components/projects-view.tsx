@@ -2,9 +2,12 @@
 
 import { useMemo } from "react";
 import { useFilters, SortSelect, FilterBar } from "@/components/filter-bar";
+import { ClashCountBadge } from "@/components/clash-badge";
 import { ProjectCard } from "@/components/project-card";
 import { ProjectMap } from "@/components/project-map";
 import { EmptyState } from "@/components/states";
+import type { Clash } from "@/lib/clash/types";
+import { countClashesByProject } from "@/lib/clash-view";
 import {
   PROJECT_TYPE_LABELS,
   STATUS_LABELS,
@@ -21,6 +24,8 @@ interface ProjectsViewProps {
   projects: readonly Project[];
   segments: readonly RoadSegment[];
   departments: readonly Department[];
+  /** Clashes over the whole registry, for the per-project badges. */
+  clashes?: readonly Clash[];
 }
 
 function useView(): ["list" | "map", (next: "list" | "map") => void] {
@@ -116,13 +121,22 @@ function DelayCell({ project }: { project: Project }) {
  * the two views without losing what they had selected — and can paste the
  * address bar to a colleague and get the same screen back.
  */
-export function ProjectsView({ projects, segments, departments }: ProjectsViewProps) {
+export function ProjectsView({
+  projects,
+  segments,
+  departments,
+  clashes,
+}: ProjectsViewProps) {
   const { filters, clearFilters } = useFilters();
   const [view, setView] = useView();
 
   const lookup = useMemo(
     () => buildFilterLookup(segments, departments),
     [segments, departments],
+  );
+  const clashCountByProject = useMemo(
+    () => countClashesByProject(clashes ?? []),
+    [clashes],
   );
   // `projects` is the whole registry and drives the "N of M" denominator plus
   // the map's stable line offsets; `visible` is what is actually drawn.
@@ -178,6 +192,7 @@ export function ProjectsView({ projects, segments, departments }: ProjectsViewPr
             allProjects={projects}
             segments={segments}
             departments={departments}
+            clashes={clashes}
           />
         </>
       ) : visible.length === 0 ? (
@@ -218,8 +233,11 @@ export function ProjectsView({ projects, segments, departments }: ProjectsViewPr
                       >
                         {project.title}
                       </a>
-                      <span className="mt-0.5 block text-xs text-neutral-500">
-                        {PROJECT_TYPE_LABELS[project.project_type]} · {segmentById.get(project.road_segment_id)?.name ?? "—"}
+                      <span className="mt-1 flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-neutral-500">
+                          {PROJECT_TYPE_LABELS[project.project_type]} · {segmentById.get(project.road_segment_id)?.name ?? "—"}
+                        </span>
+                        <ClashCountBadge count={clashCountByProject.get(project.id) ?? 0} />
                       </span>
                     </td>
                     <td className="px-3 py-2">{departmentById.get(project.department_id)?.name ?? "—"}</td>
@@ -251,6 +269,7 @@ export function ProjectsView({ projects, segments, departments }: ProjectsViewPr
                 project={project}
                 department={departmentById.get(project.department_id) ?? null}
                 segment={segmentById.get(project.road_segment_id) ?? null}
+                clashCount={clashCountByProject.get(project.id) ?? 0}
               />
             ))}
           </ul>

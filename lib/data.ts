@@ -343,6 +343,13 @@ export interface RegistryData {
   projects: Project[];
   segments: RoadSegment[];
   departments: Department[];
+  /**
+   * The source that actually answered this call. Supabase env vars being
+   * present is not the same as Supabase working — `getDataStore` probes it and
+   * degrades to the seed — so screens needing to *disclose* the source read
+   * this rather than `getDataMode()`.
+   */
+  mode: DataMode;
 }
 
 export async function loadRegistry(): Promise<RegistryData> {
@@ -352,7 +359,7 @@ export async function loadRegistry(): Promise<RegistryData> {
     store.listSegments(),
     store.listDepartments(),
   ]);
-  return { projects, segments, departments };
+  return { projects, segments, departments, mode: store.mode };
 }
 
 export async function listProjects(): Promise<Project[]> {

@@ -22,6 +22,23 @@ export interface ProjectLine {
   /** `[lat, lng]` pairs — Leaflet's order, parallel offset already applied. */
   positions: [number, number][];
   style: MapLineStyle;
+  /** Clashes this project is involved in. 0 when the caller passes no board. */
+  clashCount: number;
+}
+
+/**
+ * Middle of a drawn line, in Leaflet's `[lat, lng]` order. Used to place the
+ * clash badge on the road it belongs to rather than at an arbitrary vertex.
+ */
+export function lineMidPosition(
+  positions: readonly [number, number][],
+): [number, number] {
+  if (positions.length === 0) return [0, 0];
+  if (positions.length === 1) return positions[0];
+  if (positions.length % 2 === 1) return positions[Math.floor(positions.length / 2)];
+  const a = positions[positions.length / 2 - 1];
+  const b = positions[positions.length / 2];
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 }
 
 /**
@@ -38,6 +55,8 @@ export function buildProjectLines(
   allProjects: readonly Project[],
   segments: readonly RoadSegment[],
   departments: readonly Department[],
+  /** Clash counts per project id, from `countClashesByProject`. */
+  clashCountByProject?: ReadonlyMap<string, number>,
 ): ProjectLine[] {
   const segmentById = new Map(segments.map((s) => [s.id, s]));
   const departmentById = new Map(departments.map((d) => [d.id, d]));
@@ -79,6 +98,7 @@ export function buildProjectLines(
       department: departmentById.get(project.department_id),
       positions,
       style: STATUS_MAP_STYLE[project.status],
+      clashCount: clashCountByProject?.get(project.id) ?? 0,
     });
   }
   return result;

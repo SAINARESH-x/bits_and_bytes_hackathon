@@ -3,6 +3,9 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo } from "react";
+import { ClashCountBadge } from "@/components/clash-badge";
+import type { Clash } from "@/lib/clash/types";
+import { countClashesByProject } from "@/lib/clash-view";
 import { STATUSES } from "@/lib/filters";
 import { STATUS_LABELS, STATUS_MAP_STYLE } from "@/lib/format";
 import { buildProjectLines } from "@/lib/map-lines";
@@ -98,6 +101,11 @@ interface ProjectMapProps {
   allProjects: readonly Project[];
   segments: readonly RoadSegment[];
   departments: readonly Department[];
+  /**
+   * Clashes from the engine, unscoped. Only the counts per project are used
+   * here, so a page can pass the whole board without filtering it first.
+   */
+  clashes?: readonly Clash[];
   /** Hide the text list on views that already render one. */
   showTextList?: boolean;
   className?: string;
@@ -114,17 +122,46 @@ export function ProjectMap({
   allProjects,
   segments,
   departments,
+  clashes,
   showTextList = false,
   className = "",
 }: ProjectMapProps) {
-  const lines = useMemo(
-    () => buildProjectLines(projects, allProjects, segments, departments),
-    [projects, allProjects, segments, departments],
+  const clashCountByProject = useMemo(
+    () => countClashesByProject(clashes ?? []),
+    [clashes],
   );
+
+  const lines = useMemo(
+    () =>
+      buildProjectLines(
+        projects,
+        allProjects,
+        segments,
+        departments,
+        clashCountByProject,
+      ),
+    [projects, allProjects, segments, departments, clashCountByProject],
+  );
+
+  const flagged = lines.filter((line) => line.clashCount > 0).length;
 
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
       <LeafletProjectMap lines={lines} totalCount={projects.length} />
+
+      {flagged > 0 ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">
+          <span aria-hidden="true">⚠ </span>
+          {flagged} of the {projects.length} projects drawn ha
+          {flagged === 1 ? "s" : "ve"} a clash alert.{" "}
+          <Link
+            href="/clashes"
+            className="font-semibold underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-800"
+          >
+            Open the clash board →
+          </Link>
+        </p>
+      ) : null}
 
       <MapLegend />
 
@@ -151,8 +188,11 @@ export function ProjectMap({
                       {line.segment.name} · {line.department?.name ?? "—"}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs text-neutral-600 dark:text-neutral-400">
-                    {STATUS_LABELS[line.project.status]}
+                  <span className="flex shrink-0 items-center gap-2">
+                    <ClashCountBadge count={line.clashCount} />
+                    <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                      {STATUS_LABELS[line.project.status]}
+                    </span>
                   </span>
                 </Link>
               </li>

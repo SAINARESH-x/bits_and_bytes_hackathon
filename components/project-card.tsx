@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClashCountBadge } from "@/components/clash-badge";
 import {
   PROJECT_TYPE_LABELS,
   STATUS_LABELS,
@@ -13,13 +14,20 @@ interface ProjectCardProps {
   project: Project;
   department: Department | null;
   segment: RoadSegment | null;
+  /** Clashes this project is part of. 0 when the caller has no board. */
+  clashCount?: number;
 }
 
 /**
  * One project row in the registry list. Deliberately dense: a resident should
  * answer "what, who, where, when" without opening the detail page.
  */
-export function ProjectCard({ project, department, segment }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  department,
+  segment,
+  clashCount = 0,
+}: ProjectCardProps) {
   const late = project.status !== "cancelled" &&
     project.planned_end &&
     !project.actual_end &&
@@ -44,6 +52,7 @@ export function ProjectCard({ project, department, segment }: ProjectCardProps) 
           <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
             simulated
           </span>
+          <ClashCountBadge count={clashCount} />
         </div>
 
         <p className="mt-1 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">

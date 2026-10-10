@@ -153,3 +153,41 @@ export function ErrorState({
     </div>
   );
 }
+
+/** Loading skeleton for the clash board: header, stat strip, then cards. */
+export function ClashBoardSkeleton() {
+  return (
+    <div role="status" className="flex flex-col gap-6">
+      <span className="sr-only">Running the clash engine…</span>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-4 w-full max-w-2xl" />
+        <Skeleton className="h-4 w-3/4 max-w-xl" />
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+        {Array.from({ length: 6 }, (_, i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className={CARD}>
+            <div className="flex gap-2">
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-5 w-32" />
+            </div>
+            <Skeleton className="mt-3 h-5 w-2/3" />
+            <Skeleton className="mt-3 h-4 w-full" />
+            <Skeleton className="mt-2 h-4 w-5/6" />
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">Running the clash engine…</span>
+    </div>
+  );
+}

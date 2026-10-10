@@ -5,6 +5,7 @@ import { FilterBar, useFilters } from "@/components/filter-bar";
 import { ProjectMap } from "@/components/project-map";
 import { EmptyState } from "@/components/states";
 import { UpcomingPanel } from "@/components/upcoming-panel";
+import type { Clash } from "@/lib/clash/types";
 import { applyFilters, buildFilterLookup } from "@/lib/filters";
 import type { Department, Project, RoadSegment } from "@/lib/types";
 
@@ -12,6 +13,8 @@ interface MapScreenProps {
   projects: readonly Project[];
   segments: readonly RoadSegment[];
   departments: readonly Department[];
+  /** Clashes over the whole registry, so filtering the map keeps every badge. */
+  clashes?: readonly Clash[];
 }
 
 /**
@@ -23,7 +26,12 @@ interface MapScreenProps {
  * filter change is pure in-memory work, so the map re-renders instantly
  * instead of paying a round trip per dropdown.
  */
-export function MapScreen({ projects, segments, departments }: MapScreenProps) {
+export function MapScreen({
+  projects,
+  segments,
+  departments,
+  clashes,
+}: MapScreenProps) {
   const { filters, clearFilters } = useFilters();
 
   const lookup = useMemo(
@@ -78,6 +86,7 @@ export function MapScreen({ projects, segments, departments }: MapScreenProps) {
         allProjects={projects}
         segments={segments}
         departments={departments}
+        clashes={clashes}
         showTextList
       />
 

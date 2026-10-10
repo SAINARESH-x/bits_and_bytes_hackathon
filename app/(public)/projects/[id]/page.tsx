@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClashAlertsSection } from "@/components/clash-alerts";
 import { ProjectTimeline } from "@/components/project-timeline";
 import { ComingSoonSection } from "@/components/placeholder";
+import { detectClashes } from "@/lib/clash";
+import { clashesForProject } from "@/lib/clash-view";
 import { getDataStore } from "@/lib/data";
 import {
   DELAY_REASON_LABELS,
@@ -38,7 +41,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
   const store = await getDataStore();
 
-  const [project, updates, verifications, segments, departments, reports] =
+  const [project, updates, verifications, segments, departments, reports, projects] =
     await Promise.all([
       store.getProject(id),
       store.listUpdates(id),
@@ -46,6 +49,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       store.listSegments(),
       store.listDepartments(),
       store.listReports(),
+      store.listProjects(),
     ]);
 
   if (!project) notFound();
@@ -53,6 +57,12 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   const segment = segments.find((s) => s.id === project.road_segment_id) ?? null;
   const department = departments.find((d) => d.id === project.department_id) ?? null;
   const projectReports = reports.filter((r) => r.project_id === project.id);
+
+  // Run the engine over the whole registry, then keep only the clashes that
+  // name this project: a clash is a property of a pair, so it cannot be
+  // decided from one row.
+  const { clashes } = detectClashes(projects, segments);
+  const projectClashes = clashesForProject(clashes, project.id);
 
   const confirm = verifications.filter((v) => v.vote === "confirm").length;
   const dispute = verifications.filter((v) => v.vote === "dispute").length;
@@ -171,11 +181,10 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      <ComingSoonSection
-        headingId="clash-heading"
-        title="Clash alerts"
-        milestone="M5"
-        body="Works by other departments on this road — and works that would start again right after this one restores it — will be flagged here, with a coordinated schedule proposed instead of two open trenches three weeks apart. The detection engine lands in a later milestone."
+      <ClashAlertsSection
+        projectId={project.id}
+        clashes={projectClashes}
+        departments={departments}
       />
 
       <ComingSoonSection
