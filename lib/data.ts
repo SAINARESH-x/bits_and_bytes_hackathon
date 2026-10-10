@@ -330,6 +330,31 @@ export function getDataMode(): DataMode {
   return hasSupabaseEnv() ? "supabase" : "demo";
 }
 
+/**
+ * Everything the registry screens need, resolved against ONE store in ONE
+ * round trip.
+ *
+ * The convenience functions below each resolve the store on their own, and
+ * `getDataStore` probes Supabase before deciding — so a page calling four of
+ * them pays for four probes. This is the entry point both list screens use
+ * instead.
+ */
+export interface RegistryData {
+  projects: Project[];
+  segments: RoadSegment[];
+  departments: Department[];
+}
+
+export async function loadRegistry(): Promise<RegistryData> {
+  const store = await getDataStore();
+  const [projects, segments, departments] = await Promise.all([
+    store.listProjects(),
+    store.listSegments(),
+    store.listDepartments(),
+  ]);
+  return { projects, segments, departments };
+}
+
 export async function listProjects(): Promise<Project[]> {
   const store = await getDataStore();
   return store.listProjects();

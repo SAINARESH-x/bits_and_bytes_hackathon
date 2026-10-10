@@ -45,9 +45,20 @@ body {
   left: 0;
 }
 
-/* Leaflet must be given an explicit height, otherwise the map renders 0px. */
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  border-radius: 0.375rem;
+/*
+ * Leaflet never sets its own height, so without a fallback it renders 0px.
+ *
+ * This lives in `@layer base` on purpose. Tailwind's utilities sit in a later
+ * layer, so an unlayered `.leaflet-container { height: 100% }` here would beat
+ * `h-[420px]` on specificity-of-layers and silently collapse the map: the
+ * container would take `100%` of an `auto` parent, which is 0 — which is
+ * exactly how this was found. In `@layer base` the fallback still applies,
+ * but any explicit height utility wins.
+ */
+@layer base {
+  .leaflet-container {
+    height: 100%;
+    width: 100%;
+    border-radius: 0.375rem;
+  }
 }

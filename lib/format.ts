@@ -100,6 +100,79 @@ export function formatINR(value: number | null | undefined): string {
   }).format(value);
 }
 
+/** Today as YYYY-MM-DD in the local calendar. */
+export function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+/** Today plus `days`, as YYYY-MM-DD, in the local calendar. */
+export function addDaysISO(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+/**
+ * How each status is drawn on the map.
+ *
+ * Every status gets THREE independent cues — a colour, a line pattern, and a
+ * legend glyph — because colour alone fails for the ~8% of men with a colour
+ * vision deficiency, in greyscale screenshots, and on a projector in a judging
+ * room. The legend always shows the glyph and the pattern alongside the name.
+ */
+export interface MapLineStyle {
+  color: string;
+  /** Leaflet `dashArray`, or null for a solid line. */
+  dashArray: string | null;
+  weight: number;
+  opacity: number;
+  /** Legend glyph — the cue that survives greyscale. */
+  symbol: string;
+}
+
+export const STATUS_MAP_STYLE: Record<ProjectStatus, MapLineStyle> = {
+  planned: {
+    color: "#7c3aed", // violet
+    dashArray: "10 8",
+    weight: 5,
+    opacity: 0.9,
+    symbol: "○",
+  },
+  in_progress: {
+    color: "#2563eb", // blue — solid, because it is the live one
+    dashArray: null,
+    weight: 7,
+    opacity: 1,
+    symbol: "▶",
+  },
+  stalled: {
+    color: "#ea580c", // orange
+    dashArray: "2 7",
+    weight: 6,
+    opacity: 1,
+    symbol: "⚠",
+  },
+  completed: {
+    color: "#047857", // emerald
+    dashArray: "14 5 2 5",
+    weight: 5,
+    opacity: 0.85,
+    symbol: "✓",
+  },
+  cancelled: {
+    color: "#64748b", // slate
+    dashArray: "6 10",
+    weight: 4,
+    opacity: 0.7,
+    symbol: "✕",
+  },
+};
+
 /**
  * How late a project is against its own plan, in days.
  * 0 means on time or no baseline to compare against.
