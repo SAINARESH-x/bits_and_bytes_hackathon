@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   apiError,
   fieldError,
@@ -117,6 +118,19 @@ export async function POST(request: Request) {
       project_id: projectId,
       is_unlisted_work: isUnlisted,
     });
+
+    // Best-effort cache revalidation so public pages pick up the new report.
+    // The report is already saved — if the cache cannot be purged (unsupported
+    // runtime, missing path, transient failure) the write must still succeed,
+    // so these calls sit in their own try/catch and can never turn a 201 into
+    // a 500.
+    try {
+      revalidatePath("/dashboard");
+      revalidatePath("/map");
+      revalidatePath("/projects");
+    } catch (error) {
+      console.error("[reports] cache revalidation failed:", error);
+    }
 
     return NextResponse.json(
       {
