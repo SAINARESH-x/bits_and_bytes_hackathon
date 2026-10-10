@@ -9,7 +9,7 @@ import { countClashesByProject } from "@/lib/clash-view";
 import { STATUSES } from "@/lib/filters";
 import { STATUS_LABELS, STATUS_MAP_STYLE } from "@/lib/format";
 import { buildProjectLines } from "@/lib/map-lines";
-import type { Department, Project, RoadSegment } from "@/lib/types";
+import type { CitizenReport, Department, Project, RoadSegment } from "@/lib/types";
 
 /**
  * Public wrapper around the real Leaflet tree.
@@ -83,7 +83,17 @@ export function MapLegend() {
           );
         })}
       </ul>
-      <p className="mt-3 text-xs text-neutral-600 dark:text-neutral-400">
+      <p className="mt-3 flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+        <span
+          aria-hidden="true"
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-fuchsia-700 text-[10px] font-bold leading-none text-white"
+        >
+          ✚
+        </span>
+        Unlisted-work report — digging a resident flagged that is not in the
+        registry.
+      </p>
+      <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
         Line style and symbol both encode status, so the map stays readable in
         greyscale. Map data © OpenStreetMap contributors.
       </p>
@@ -106,6 +116,8 @@ interface ProjectMapProps {
    * here, so a page can pass the whole board without filtering it first.
    */
   clashes?: readonly Clash[];
+  /** Unlisted-work reports to pin on the map (PLAN.md M6 item 3). */
+  unlistedReports?: readonly CitizenReport[];
   /** Hide the text list on views that already render one. */
   showTextList?: boolean;
   className?: string;
@@ -123,6 +135,7 @@ export function ProjectMap({
   segments,
   departments,
   clashes,
+  unlistedReports = [],
   showTextList = false,
   className = "",
 }: ProjectMapProps) {
@@ -147,7 +160,11 @@ export function ProjectMap({
 
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
-      <LeafletProjectMap lines={lines} totalCount={projects.length} />
+      <LeafletProjectMap
+        lines={lines}
+        totalCount={projects.length}
+        unlistedReports={unlistedReports}
+      />
 
       {flagged > 0 ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-100">
@@ -159,6 +176,21 @@ export function ProjectMap({
             className="font-semibold underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-800"
           >
             Open the clash board →
+          </Link>
+        </p>
+      ) : null}
+
+      {unlistedReports.length > 0 ? (
+        <p className="rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-sm text-fuchsia-900 dark:border-fuchsia-900 dark:bg-fuchsia-950 dark:text-fuchsia-100">
+          <span aria-hidden="true">✚ </span>
+          {unlistedReports.length} citizen report
+          {unlistedReports.length === 1 ? " flags" : "s flag"} work that is not in
+          the registry.{" "}
+          <Link
+            href="/report"
+            className="font-semibold underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-800"
+          >
+            Report unlisted work →
           </Link>
         </p>
       ) : null}
@@ -198,6 +230,28 @@ export function ProjectMap({
               </li>
             ))}
           </ul>
+
+          {unlistedReports.length > 0 ? (
+            <>
+              <p className="mt-3 text-sm font-medium">
+                Unlisted-work reports ({unlistedReports.length})
+              </p>
+              <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                Digging reported by residents that matches no registry entry.
+              </p>
+              <ul className="mt-2 flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
+                {unlistedReports.map((report) => (
+                  <li key={report.id} className="py-2 text-sm">
+                    <span aria-hidden="true">✚ </span>
+                    {report.description}
+                    <span className="block text-xs text-neutral-500">
+                      {report.lat.toFixed(5)}, {report.lng.toFixed(5)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </details>
       ) : null}
     </div>

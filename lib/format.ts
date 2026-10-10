@@ -36,14 +36,11 @@ export const DELAY_REASON_LABELS: Record<DelayReason, string> = {
 };
 
 export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
-  pothole: "Pothole",
-  open_trench: "Open trench",
-  damaged_structure: "Damaged structure",
-  blocked_drain: "Blocked drain",
-  waterlogging: "Waterlogging",
-  debris_obstruction: "Debris obstruction",
-  unsafe_opening: "Unsafe opening",
-  unlisted_digging: "Unlisted digging",
+  unsafe_barricade: "Unsafe barricade",
+  work_stalled: "Work stalled",
+  poor_road_restoration: "Poor road restoration",
+  debris_dust_noise: "Debris / dust / noise",
+  unlisted_work: "Unlisted work",
   other: "Other",
 };
 

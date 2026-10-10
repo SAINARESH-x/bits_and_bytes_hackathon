@@ -18,12 +18,9 @@ const MAX_TRACKED_IPS = 10_000;
 
 const failures = new Map<string, number[]>();
 
-/** Best-effort client address from the proxy headers, else "unknown". */
-export function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim() || "unknown";
-  return "unknown";
-}
+// Shared with the citizen write-route limiter; re-exported so the console's
+// public surface (and its tests) does not change.
+export { getClientIp } from "@/lib/client-ip";
 
 export function isRateLimited(ip: string, now: number = Date.now()): boolean {
   const recent = (failures.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);

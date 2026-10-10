@@ -5,8 +5,9 @@ import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
-import { PROJECT_TYPE_LABELS, STATUS_LABELS, formatDate } from "@/lib/format";
+import { PROJECT_TYPE_LABELS, REPORT_TYPE_LABELS, STATUS_LABELS, formatDate } from "@/lib/format";
 import { lineMidPosition, type ProjectLine } from "@/lib/map-lines";
+import type { CitizenReport } from "@/lib/types";
 import { clashMarkerHtml } from "./clash-badge";
 import { fixLeafletDefaultIcons } from "./map/leaflet-icons";
 
@@ -41,6 +42,8 @@ interface LeafletMapProps {
   lines: readonly ProjectLine[];
   /** Number of projects behind the drawn lines, for the aria description. */
   totalCount: number;
+  /** Unlisted-work reports, pinned as their own markers (PLAN.md M6 item 3). */
+  unlistedReports?: readonly CitizenReport[];
 }
 
 /**
@@ -48,7 +51,11 @@ interface LeafletMapProps {
  * `next/dynamic({ ssr: false })`, so nothing here ever executes on the
  * server — see project-map.tsx.
  */
-export function LeafletProjectMap({ lines, totalCount }: LeafletMapProps) {
+export function LeafletProjectMap({
+  lines,
+  totalCount,
+  unlistedReports = [],
+}: LeafletMapProps) {
   useEffect(() => {
     fixLeafletDefaultIcons();
   }, []);
@@ -78,10 +85,26 @@ export function LeafletProjectMap({ lines, totalCount }: LeafletMapProps) {
     };
   }, []);
 
+  /**
+   * Unlisted reports get a distinct round marker. Built once and shared: every
+   * report looks the same, so one DivIcon is enough.
+   */
+  const reportIcon = useMemo(
+    () =>
+      L.divIcon({
+        className: "unlisted-report-marker",
+        html: '<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:9999px;background:#a21caf;color:#fff;font-size:12px;font-weight:700;line-height:1;box-shadow:0 0 0 2px #fff;">✚</span>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        popupAnchor: [0, -11],
+      }),
+    [],
+  );
+
   return (
     <div
       role="region"
-      aria-label={`Project map. ${totalCount} project${totalCount === 1 ? "" : "s"} drawn, of which ${flagged.length} ha${flagged.length === 1 ? "s" : "ve"} at least one clash alert. A keyboard-accessible list of everything shown is below the map.`}
+      aria-label={`Project map. ${totalCount} project${totalCount === 1 ? "" : "s"} drawn, of which ${flagged.length} ha${flagged.length === 1 ? "s" : "ve"} at least one clash alert. ${unlistedReports.length} unlisted-work report${unlistedReports.length === 1 ? "" : "s"} pinned. A keyboard-accessible list of everything shown is below the map.`}
       className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800"
     >
       <MapContainer
@@ -175,6 +198,39 @@ export function LeafletProjectMap({ lines, totalCount }: LeafletMapProps) {
               {line.clashCount} clash alert{line.clashCount === 1 ? "" : "s"} on{" "}
               {line.segment.name}
             </Tooltip>
+          </Marker>
+        ))}
+
+        {/*
+          Unlisted-work reports: the one signal with no registry line to sit on.
+          Always on top, always labelled with the report type and date so a
+          marker in the middle of nowhere explains itself.
+        */}
+        {unlistedReports.map((report) => (
+          <Marker
+            key={`report-${report.id}`}
+            position={[report.lat, report.lng]}
+            icon={reportIcon}
+          >
+            <Popup>
+              <div className="w-56 text-neutral-900">
+                <p className="text-xs uppercase tracking-wide text-fuchsia-700">
+                  Unlisted work · {REPORT_TYPE_LABELS[report.report_type]}
+                </p>
+                <p className="mt-1 text-sm">{report.description}</p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  Reported {formatDate(report.created_at.slice(0, 10))}
+                </p>
+                {report.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={report.photo_url}
+                    alt="Photo attached to this report"
+                    className="mt-2 h-28 w-full rounded border border-neutral-200 object-cover"
+                  />
+                ) : null}
+              </div>
+            </Popup>
           </Marker>
         ))}
       </MapContainer>

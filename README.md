@@ -65,10 +65,23 @@ _(Built across milestones M1–M8.)_
   table; and as a **Clash alerts** section on every project page. `GET
   /api/clashes` serves the same board as cacheable JSON.
 - Live clash preview while creating a project. _(M5 — done in `/console`.)_
-- Citizen layer: follow, geotagged issue reports, confirm/dispute completion.
-  _(M6 — placeholder on the detail page.)_
+- **M6 (done): citizen layer.** `/report` files a geotagged issue with an
+  optional photo and a location captured three ways (browser geolocation,
+  a tap on the Leaflet picker, or typed coordinates — so denied permission
+  never blocks a report). The server re-runs the same pure proximity logic:
+  a report within **100 m** of an active project's road segment is linked to
+  it, otherwise it is flagged `is_unlisted_work` and pinned as its own marker
+  on `/map`. Photos are downscaled in-browser to ≤ 1 MB, re-validated and
+  metadata-stripped server-side, then uploaded to Supabase Storage (or the
+  committed placeholder in demo mode). Anyone can **follow** a project (stored
+  on the device, no account) and see a **"what changed since your last visit"**
+  feed at `/following`. On a completed project, residents **confirm or dispute**
+  that it is really finished — one vote per device, backed by a DB unique
+  constraint — and a completion with ≥ 3 disputes (or ≥ 40% of votes) is marked
+  **Contested** and surfaced on `/dashboard`.
 - Transparency dashboard: delays, repeat digs, contested completions,
-  per-department scorecard.
+  per-department scorecard. _(M7 — the contested-completions slice ships with
+  M6; the rest is pending.)_
 
 ## Department console (`/console`)
 
@@ -100,6 +113,38 @@ shared passcode. The passcode + httpOnly cookie is the hackathon stand-in, and
 the data-honesty rules (see [Simulated data disclosure](#simulated-data-disclosure))
 apply to everything created through it.
 
+## Citizen layer (`/report`, `/following`, verification)
+
+- **Report an issue** (`/report`) captures a type (unsafe barricade, work
+  stalled, poor road restoration, debris / dust / noise, unlisted work, other),
+  a 10–500-character description, an optional photo and a location. Location
+  works with or without geolocation permission: *Use my location* fills it in,
+  and a tap on the map or typed latitude/longitude always works as a fallback.
+- **Auto-linking.** `POST /api/reports` re-runs the pure proximity check
+  (`lib/geo-link.ts`) over the registry the server actually holds. A report
+  within 100 m of an **active** project (planned / in progress / stalled) links
+  to it; no match — or an explicit "this is unlisted work" — sets
+  `is_unlisted_work = true`. Unlisted reports appear as distinct markers on
+  `/map` and in its keyboard-accessible text list.
+- **Photos.** The browser downscales and re-encodes the image to ≤ 1 MB before
+  upload; the server re-checks the MIME type and byte length, sniffs the real
+  container, and strips JPEG/PNG/WebP metadata (including GPS EXIF) before
+  storing it. With no Storage configured, reports still work and the upload
+  route returns the committed placeholder image with an explicit notice.
+- **Following.** `/following` lists the projects this device follows with a
+  "what changed since your last visit" indicator. Follows and the last-seen
+  timestamp live in `localStorage` (wrapped in try/catch, degrading to empty),
+  so no account is needed.
+- **Completion verification.** A `completed` project shows Confirm / Dispute
+  buttons. One vote per **device** — the id is minted in `localStorage` and the
+  DB enforces `unique (project_id, device_id)`, so clearing the browser store
+  cannot buy a second vote. A completion is **contested** at ≥ 3 disputes or
+  ≥ 40% of all votes, and contested completions are listed on `/dashboard`.
+- **Abuse & robustness.** Every write route runs server-side Zod, a honeypot
+  field, and a per-IP in-memory rate limit; the browser client retries once on
+  network/timeout (never on an HTTP error) and surfaces a friendly message, so
+  a slow or offline connection degrades gracefully.
+
 ## How the clash engine decides
 
 The engine is a pure function — `detectClashes(projects, segments, options)` —
@@ -130,7 +175,8 @@ disclosure that no spatial library is doing the work.
 ## Architecture
 
 ```
-app/(public)/           Public routes: /, /map, /projects, /projects/[id], /clashes
+app/(public)/           Public routes: /, /map, /projects, /projects/[id], /clashes,
+                        /report, /following, /dashboard
 app/(public)/*/loading, error, not-found
                         Per-route skeleton, retryable error and 404 states
 app/console/            Department console (DEMO_PASSCODE gate): new project
@@ -138,13 +184,29 @@ app/console/            Department console (DEMO_PASSCODE gate): new project
 app/api/health/         Health endpoint reporting demo | supabase mode
 app/api/clashes/        GET the computed clash board as cacheable JSON
 app/api/console/        login / logout / projects / updates (server-validated)
+app/api/reports/        POST a citizen report (auto-links by proximity) and
+                        POST a photo (validated + metadata-stripped + uploaded)
+app/api/projects/[id]/verdicts/  POST confirm/dispute, one per device
 components/             UI. Leaflet lives behind next/dynamic (ssr: false);
                         the legend and text list render in server HTML
 lib/data.ts             Data access: Supabase when configured, seed.json otherwise
 lib/console-auth.ts     Server-only console session: HMAC passcode + httpOnly
                         cookie + constant-time compare (demo-grade, not prod)
 lib/console-rate-limit.ts  Per-IP sliding window on failed logins
-lib/console-api.ts      Shared JSON error shapes for the console routes
+lib/console-api.ts      Console JSON error shapes (re-exports lib/api-response)
+lib/api-response.ts     Shared JSON error shapes for every write route
+lib/api-client.ts       Browser fetch wrapper: timeout + one network-only retry
+lib/rate-limit.ts       In-memory sliding-window limiter (per process instance)
+lib/client-ip.ts        Best-effort client IP for rate limiting
+lib/geo-link.ts         Pure proximity check: report → nearest active project
+lib/contested.ts        Pure "contested completion" rule (≥3 or ≥40% disputes)
+lib/follows.ts          localStorage follows + last-seen timestamp (try/catch)
+lib/follow-activity.ts  Pure "what changed since last visit" helpers
+lib/device.ts           Device UUID + remembered votes in localStorage
+lib/report-photo.ts     Shared placeholder-photo constant
+lib/image/compress.ts   Browser downscale / re-encode to ≤ 1 MB (canvas)
+lib/image/metadata.ts   Server-side JPEG/PNG/WebP metadata stripper (no deps)
+lib/supabase/storage.ts Server-only Storage upload (service-role key)
 lib/filters.ts          Pure filter/sort state shared by /map and /projects
 lib/map-lines.ts        Pure polyline builder: groups projects per segment and
                         offsets overlapping lines so each stays clickable
@@ -156,7 +218,7 @@ lib/clashes.ts          Server-side loader: registry + engine → board payload
 lib/supabase/           Supabase client factory (returns null without env vars)
 lib/types.ts            Shared domain types
 data/seed.json          Simulated dataset backing demo mode
-supabase/schema.sql     Postgres schema (optional — demo mode needs no DB)
+supabase/schema.sql     Postgres schema + Storage bucket (optional — demo needs no DB)
 scripts/verify-*.mjs    End-to-end checks (server HTML + headless Chrome)
 tests/                  Vitest unit tests
 ```
@@ -189,6 +251,19 @@ Not used, deliberately: **no `turf.js`** (or any spatial library). The clash
 engine's distance maths — haversine plus point-to-segment proximity in a local
 metre frame — is hand-written in `lib/clash/geo.ts` and unit-tested, so the
 spatial logic is inspectable and adds no dependency.
+
+Also deliberate: **no image-processing or EXIF library** (no `sharp`, no
+`piexifjs`). The browser downscales report photos with a plain `<canvas>`, and
+`lib/image/metadata.ts` strips metadata by parsing the JPEG / PNG / WebP
+container bytes by hand. This adds no dependency and keeps the logic testable
+(`tests/image-metadata.test.ts`), and any format it does not recognise is
+returned unchanged with `stripped: false` rather than corrupted.
+
+**Rate limiting is in-memory and therefore per process instance.** On a
+multi-instance deploy the effective limit is `limit × instances`. It is an
+honest demo-grade guard against casual spam — not a substitute for a distributed
+limiter (e.g. Upstash/Redis) in production. The same applies to the console's
+login limiter.
 
 ## Setup
 
@@ -240,6 +315,16 @@ curl http://localhost:3000/api/clashes | head -c 200
 # {"clashes":[...],"clusters":[...],"skipped":[],"counts":{...},"mode":"demo",...}
 ```
 
+### Optional: Supabase + photo storage
+
+Demo mode needs no database at all. To persist to Supabase, set
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, run
+`supabase/schema.sql` (which creates the tables and a public-read
+`report-photos` storage bucket), and set `SUPABASE_SERVICE_ROLE_KEY` so the
+server can upload report photos. `SUPABASE_REPORT_BUCKET` overrides the bucket
+name (default `report-photos`). With no service-role key the app keeps working:
+photo uploads return the committed placeholder image.
+
 ## Tests
 
 `npm test` runs the Vitest suite. The clash engine carries the heaviest coverage
@@ -258,6 +343,16 @@ console create route's 401 guard. `tests/console-schemas.test.ts` covers the
 console update schema (a delay reason is allowed alongside any status), the
 past-planned-end rule, and the shared schema now rejecting impossible calendar
 dates like `2026-02-30`.
+
+The citizen layer is covered by focused unit tests: `tests/geo-link.test.ts`
+(the 100 m auto-link boundary, active-status filtering, nearest-first order),
+`tests/contested.test.ts` (both contest thresholds and their edges),
+`tests/image-metadata.test.ts` (metadata stripped from crafted JPEG / PNG / WebP
+buffers while pixel data survives), `tests/rate-limit.test.ts` (sliding-window
+boundaries and the no-lockout-extension rule), `tests/follow-activity.test.ts`
+and `tests/follow-display.test.ts` (the "what changed" helpers), and
+`tests/data.test.ts` (the report/verification write paths and the new report
+schema constraints).
 
 ## Demo video
 

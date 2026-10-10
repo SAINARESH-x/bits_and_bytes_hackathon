@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480" role="img" aria-label="Placeholder image for a report photo">
+  <rect width="640" height="480" fill="#e5e7eb"/>
+  <g fill="none" stroke="#9ca3af" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="150" y="150" width="340" height="240" rx="20"/>
+    <circle cx="250" cy="215" r="26"/>
+    <path d="M170 360 L280 260 L340 320 L400 260 L470 340"/>
+  </g>
+  <text x="320" y="440" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" fill="#6b7280">
+    Placeholder — photo not stored in demo mode
+  </text>
+</svg>

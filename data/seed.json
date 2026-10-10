@@ -1026,7 +1026,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000001",
       "project_id": "c0000003-0000-4000-8000-000000000006",
-      "report_type": "damaged_structure",
+      "report_type": "poor_road_restoration",
       "description": "Tactile tiles already lifting at the ramp near the bus stop.",
       "photo_url": null,
       "lat": 13.075,
@@ -1038,7 +1038,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000002",
       "project_id": null,
-      "report_type": "unlisted_digging",
+      "report_type": "unlisted_work",
       "description": "Cable trench opened across the service lane with no signboard or notice. Been open four days.",
       "photo_url": null,
       "lat": 13.0409,
@@ -1050,7 +1050,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000003",
       "project_id": "c0000003-0000-4000-8000-000000000005",
-      "report_type": "pothole",
+      "report_type": "poor_road_restoration",
       "description": "New pothole opening at the junction end.",
       "photo_url": null,
       "lat": 13.0755,
@@ -1062,7 +1062,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000004",
       "project_id": "c0000003-0000-4000-8000-000000000009",
-      "report_type": "open_trench",
+      "report_type": "unsafe_barricade",
       "description": "Trench left unfilled overnight with no barriers.",
       "photo_url": null,
       "lat": 13.0348,
@@ -1074,7 +1074,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000005",
       "project_id": "c0000003-0000-4000-8000-000000000014",
-      "report_type": "blocked_drain",
+      "report_type": "debris_dust_noise",
       "description": "Silt and construction debris blocking the inlet.",
       "photo_url": null,
       "lat": 13.082,
@@ -1086,7 +1086,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000006",
       "project_id": "c0000003-0000-4000-8000-000000000018",
-      "report_type": "waterlogging",
+      "report_type": "poor_road_restoration",
       "description": "Water pools across half the carriageway after rain.",
       "photo_url": null,
       "lat": 13.039,
@@ -1098,7 +1098,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000007",
       "project_id": "c0000003-0000-4000-8000-000000000022",
-      "report_type": "debris_obstruction",
+      "report_type": "debris_dust_noise",
       "description": "Excavated spoil heaped on the footpath.",
       "photo_url": null,
       "lat": 13.0805,
@@ -1110,7 +1110,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000008",
       "project_id": "c0000003-0000-4000-8000-000000000026",
-      "report_type": "unsafe_opening",
+      "report_type": "unsafe_barricade",
       "description": "Open junction box with a loose cover, no reflector.",
       "photo_url": null,
       "lat": 13.053,
@@ -1122,7 +1122,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000009",
       "project_id": "c0000003-0000-4000-8000-000000000001",
-      "report_type": "pothole",
+      "report_type": "poor_road_restoration",
       "description": "Surface breaking up where the fibre trench was backfilled.",
       "photo_url": null,
       "lat": 13.0692,
@@ -1134,7 +1134,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000010",
       "project_id": "c0000003-0000-4000-8000-000000000003",
-      "report_type": "open_trench",
+      "report_type": "unsafe_barricade",
       "description": "Drain trench barricades pushed into the walking lane.",
       "photo_url": null,
       "lat": 13.034,
@@ -1158,7 +1158,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000012",
       "project_id": "c0000003-0000-4000-8000-000000000012",
-      "report_type": "damaged_structure",
+      "report_type": "poor_road_restoration",
       "description": "Newly laid surface already rutted at the bus stop.",
       "photo_url": null,
       "lat": 13.086,
@@ -1170,7 +1170,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000013",
       "project_id": "c0000003-0000-4000-8000-000000000017",
-      "report_type": "blocked_drain",
+      "report_type": "debris_dust_noise",
       "description": "Cement washout from the site has set inside the channel.",
       "photo_url": null,
       "lat": 13.0388,
@@ -1182,7 +1182,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000014",
       "project_id": "c0000003-0000-4000-8000-000000000020",
-      "report_type": "debris_obstruction",
+      "report_type": "debris_dust_noise",
       "description": "Steel plates left across the cycle track.",
       "photo_url": null,
       "lat": 13.071,
@@ -1194,7 +1194,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000015",
       "project_id": "c0000003-0000-4000-8000-000000000024",
-      "report_type": "pothole",
+      "report_type": "poor_road_restoration",
       "description": "Shoulder collapsing where the cable trench was filled.",
       "photo_url": null,
       "lat": 13.052,
@@ -1206,7 +1206,7 @@
     {
       "id": "e0000005-0000-4000-8000-000000000016",
       "project_id": "c0000003-0000-4000-8000-000000000030",
-      "report_type": "unsafe_opening",
+      "report_type": "unsafe_barricade",
       "description": "Survey pit uncovered and unlit after dark.",
       "photo_url": null,
       "lat": 13.0718,

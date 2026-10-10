@@ -1,6 +1,7 @@
 import seed from "@/data/seed.json";
 import { resolveSeedDate, resolveSeedDateOptional } from "@/lib/seed-dates";
 import type {
+  CitizenReportInput,
   ProjectInput,
   ProjectUpdateInput,
   VerificationInput,
@@ -35,11 +36,16 @@ export interface DataStore {
   listProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | null>;
   listUpdates(projectId: string): Promise<ProjectUpdate[]>;
+  /** Every update row — the dashboard and the followed-projects feed need all. */
+  listAllUpdates(): Promise<ProjectUpdate[]>;
   listReports(): Promise<CitizenReport[]>;
   listVerifications(projectId: string): Promise<Verification[]>;
+  /** Every vote across all projects — used to compute "contested completions". */
+  listAllVerifications(): Promise<Verification[]>;
   createProject(input: ProjectInput): Promise<Project>;
   addUpdate(input: ProjectUpdateInput): Promise<ProjectUpdate>;
   addVerification(input: VerificationInput): Promise<Verification>;
+  createReport(input: CitizenReportInput): Promise<CitizenReport>;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,9 +111,12 @@ export function createSeedStore(now: Date = new Date()): DataStore {
       updates
         .filter((u) => u.project_id === projectId)
         .sort((a, b) => a.created_at.localeCompare(b.created_at)),
+    listAllUpdates: async () =>
+      [...updates].sort((a, b) => a.created_at.localeCompare(b.created_at)),
     listReports: async () => reports,
     listVerifications: async (projectId) =>
       verifications.filter((v) => v.project_id === projectId),
+    listAllVerifications: async () => [...verifications],
 
     createProject: async (input) => {
       const project: Project = {
@@ -178,6 +187,24 @@ export function createSeedStore(now: Date = new Date()): DataStore {
       verifications.push(verification);
       return verification;
     },
+
+    createReport: async (input) => {
+      const report: CitizenReport = {
+        id: nextId("rep"),
+        project_id: input.project_id ?? null,
+        report_type: input.report_type,
+        description: input.description,
+        photo_url: input.photo_url ?? null,
+        lat: input.lat,
+        lng: input.lng,
+        is_unlisted_work: input.is_unlisted_work,
+        // Demo writes are not persisted, so they are still simulated.
+        is_simulated: true,
+        created_at: new Date().toISOString(),
+      };
+      reports.push(report);
+      return report;
+    },
   };
 }
 
@@ -247,6 +274,11 @@ export function createSupabaseStore(): DataStore | null {
           .abortSignal(signal),
       )) ?? [],
 
+    listAllUpdates: async () =>
+      (await withTimeout((signal) =>
+        client.from("project_updates").select("*").order("created_at").abortSignal(signal),
+      )) ?? [],
+
     listReports: async () =>
       (await withTimeout((signal) =>
         client.from("citizen_reports").select("*").order("created_at").abortSignal(signal),
@@ -260,6 +292,11 @@ export function createSupabaseStore(): DataStore | null {
           .eq("project_id", projectId)
           .order("created_at")
           .abortSignal(signal),
+      )) ?? [],
+
+    listAllVerifications: async () =>
+      (await withTimeout((signal) =>
+        client.from("verifications").select("*").order("created_at").abortSignal(signal),
       )) ?? [],
 
     // Writes go through the anon key, which is read-only under RLS. Until the
@@ -298,6 +335,27 @@ export function createSupabaseStore(): DataStore | null {
       );
       if (!row) throw new Error("Could not save your vote. Please try again.");
       return row as Verification;
+    },
+
+    createReport: async (input) => {
+      const row = await withTimeout((signal) =>
+        client
+          .from("citizen_reports")
+          .insert({
+            project_id: input.project_id ?? null,
+            report_type: input.report_type,
+            description: input.description,
+            photo_url: input.photo_url ?? null,
+            lat: input.lat,
+            lng: input.lng,
+            is_unlisted_work: input.is_unlisted_work,
+          })
+          .select()
+          .abortSignal(signal)
+          .single(),
+      );
+      if (!row) throw new Error("Could not save the report. Please try again.");
+      return row as CitizenReport;
     },
   };
 }
@@ -418,6 +476,11 @@ export async function listUpdates(projectId: string): Promise<ProjectUpdate[]> {
   return store.listUpdates(projectId);
 }
 
+export async function listAllUpdates(): Promise<ProjectUpdate[]> {
+  const store = await getDataStore();
+  return store.listAllUpdates();
+}
+
 export async function listReports(): Promise<CitizenReport[]> {
   const store = await getDataStore();
   return store.listReports();
@@ -428,6 +491,11 @@ export async function listVerifications(
 ): Promise<Verification[]> {
   const store = await getDataStore();
   return store.listVerifications(projectId);
+}
+
+export async function listAllVerifications(): Promise<Verification[]> {
+  const store = await getDataStore();
+  return store.listAllVerifications();
 }
 
 export async function createProject(input: ProjectInput): Promise<Project> {
@@ -443,4 +511,9 @@ export async function addUpdate(input: ProjectUpdateInput): Promise<ProjectUpdat
 export async function addVerification(input: VerificationInput): Promise<Verification> {
   const store = await getDataStore();
   return store.addVerification(input);
+}
+
+export async function createReport(input: CitizenReportInput): Promise<CitizenReport> {
+  const store = await getDataStore();
+  return store.createReport(input);
 }

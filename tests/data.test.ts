@@ -236,8 +236,8 @@ describe("schemas reject bad input", () => {
   it("rejects an unlisted report that also names a project", () => {
     const result = citizenReportInputSchema.safeParse({
       project_id: "11111111-1111-4111-8111-111111111111",
-      report_type: "pothole",
-      description: "A pothole",
+      report_type: "unlisted_work",
+      description: "Ditch dug overnight, no board or name.",
       lat: 13.06,
       lng: 80.24,
       is_unlisted_work: true,
@@ -247,9 +247,20 @@ describe("schemas reject bad input", () => {
 
   it("rejects an out-of-range coordinate", () => {
     const result = citizenReportInputSchema.safeParse({
-      report_type: "pothole",
+      report_type: "other",
       description: "Somewhere impossible",
       lat: 999,
+      lng: 80.24,
+      is_unlisted_work: true,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a description shorter than 10 characters", () => {
+    const result = citizenReportInputSchema.safeParse({
+      report_type: "other",
+      description: "short",
+      lat: 13.06,
       lng: 80.24,
       is_unlisted_work: true,
     });
@@ -263,5 +274,39 @@ describe("schemas reject bad input", () => {
       device_id: "not-a-uuid",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("skinny writes (M6)", () => {
+  it("creates a report and reads it back", async () => {
+    const store = createSeedStore();
+    const created = await store.createReport({
+      project_id: null,
+      report_type: "unlisted_work",
+      description: "Fresh trench with no barricade near the school gate.",
+      photo_url: null,
+      lat: 13.07,
+      lng: 80.24,
+      is_unlisted_work: true,
+    });
+
+    expect(created.is_simulated).toBe(true);
+    expect(created.is_unlisted_work).toBe(true);
+    const reports = await store.listReports();
+    expect(reports.some((r) => r.id === created.id)).toBe(true);
+  });
+
+  it("lists every update and every verification across projects", async () => {
+    const store = createSeedStore();
+    const [updates, votes] = await Promise.all([
+      store.listAllUpdates(),
+      store.listAllVerifications(),
+    ]);
+    expect(updates.length).toBeGreaterThan(0);
+    expect(votes.length).toBeGreaterThan(0);
+    // All-updates is the concatenation of the per-project logs.
+    const [project] = await store.listProjects();
+    const own = await store.listUpdates(project.id);
+    expect(updates.length).toBeGreaterThanOrEqual(own.length);
   });
 });

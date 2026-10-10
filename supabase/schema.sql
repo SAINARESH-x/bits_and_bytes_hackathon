@@ -35,14 +35,11 @@ create type delay_reason as enum
 
 drop type if exists report_type cascade;
 create type report_type as enum
-  ('pothole',
-   'open_trench',
-   'damaged_structure',
-   'blocked_drain',
-   'waterlogging',
-   'debris_obstruction',
-   'unsafe_opening',
-   'unlisted_digging',
+  ('unsafe_barricade',
+   'work_stalled',
+   'poor_road_restoration',
+   'debris_dust_noise',
+   'unlisted_work',
    'other');
 
 drop type if exists verification_vote cascade;
@@ -216,3 +213,25 @@ create policy "public read updates"      on project_updates for select using (tr
 create policy "public read reports"      on citizen_reports for select using (true);
 create policy "public read verifications" on verifications for select using (true);
 -- profiles stays unreadable: it maps device/user ids to roles.
+
+-- Writes are performed by server route handlers using the service-role key,
+-- which bypasses RLS. Citizen INSERT/UPDATE stays closed to the anon key.
+
+-- ---------------------------------------------------------------------------
+-- Storage — citizen report photos (M6)
+--
+-- Report photos are compressed client-side to <= 1 MB before upload, re-checked
+-- server-side, and stored with their EXIF/metadata stripped (see
+-- lib/image/metadata.ts). The bucket is public-read so a stored photo URL can
+-- render in the report list; uploads go through the service-role key only.
+-- ---------------------------------------------------------------------------
+
+insert into storage.buckets (id, name, public)
+values ('report-photos', 'report-photos', true)
+on conflict (id) do update set public = true;
+
+-- Public read of objects in the report-photos bucket; no anon write policy,
+-- so browsers cannot upload directly.
+create policy "public read report photos"
+  on storage.objects for select
+  using (bucket_id = 'report-photos');

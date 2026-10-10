@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClashAlertsSection } from "@/components/clash-alerts";
+import { ContestedBadge } from "@/components/contested-badge";
+import { FollowButton } from "@/components/follow-button";
 import { ProjectTimeline } from "@/components/project-timeline";
-import { ComingSoonSection } from "@/components/placeholder";
+import { VerifyCompletion } from "@/components/verify-completion";
 import { detectClashes } from "@/lib/clash";
 import { clashesForProject } from "@/lib/clash-view";
+import { isContested, tally } from "@/lib/contested";
 import { getDataStore } from "@/lib/data";
 import {
   DELAY_REASON_LABELS,
@@ -64,8 +67,8 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   const { clashes } = detectClashes(projects, segments);
   const projectClashes = clashesForProject(clashes, project.id);
 
-  const confirm = verifications.filter((v) => v.vote === "confirm").length;
-  const dispute = verifications.filter((v) => v.vote === "dispute").length;
+  const voteTally = tally(verifications);
+  const contested = project.status === "completed" && isContested(voteTally);
 
   return (
     <article className="flex flex-col gap-6">
@@ -86,6 +89,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           >
             {STATUS_LABELS[project.status]}
           </span>
+          {contested ? <ContestedBadge /> : null}
           <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
             simulated
           </span>
@@ -93,6 +97,15 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         <p className="max-w-2xl text-sm text-neutral-600 dark:text-neutral-400">
           {project.purpose}
         </p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <FollowButton projectId={project.id} />
+          <Link
+            href={`/report?project=${project.id}`}
+            className="rounded border border-neutral-300 px-3 py-1.5 text-sm font-medium hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-neutral-700 dark:hover:bg-neutral-800"
+          >
+            Report an issue
+          </Link>
+        </div>
       </header>
 
       <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -187,32 +200,25 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         departments={departments}
       />
 
-      <ComingSoonSection
-        headingId="verification-heading"
-        title="Citizen verification"
-        milestone="M6"
-        body="Residents will be able to confirm or dispute that a completed job is really done, one vote per device. Until voting ships, the current simulated tally is shown so the data behind the feature is visible now."
-      >
-        <div className="mt-4 flex gap-6">
-          <div>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {confirm}
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">confirmed</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-              {dispute}
-            </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">disputed</p>
-          </div>
-        </div>
-        {dispute > confirm && dispute > 0 ? (
-          <p className="mt-3 text-sm font-medium text-red-700 dark:text-red-400">
-            More residents dispute this completion than confirm it.
+      {project.status === "completed" ? (
+        <VerifyCompletion projectId={project.id} initialTally={voteTally} />
+      ) : (
+        <section
+          aria-labelledby="verification-heading"
+          className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800"
+        >
+          <h2 id="verification-heading" className="text-lg font-semibold">
+            Is this really finished?
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-neutral-600 dark:text-neutral-400">
+            Once this project is marked completed, residents will be able to
+            confirm or dispute that the work is really finished — one vote per
+            device. It is currently{" "}
+            <span className="font-medium">{STATUS_LABELS[project.status]}</span>,
+            so there is nothing to verify yet.
           </p>
-        ) : null}
-      </ComingSoonSection>
+        </section>
+      )}
 
       <section aria-labelledby="reports-heading">
         <h2 id="reports-heading" className="mb-3 text-lg font-semibold">
@@ -237,9 +243,22 @@ export default async function ProjectDetailPage({ params }: PageProps) {
                     {formatDate(r.created_at.slice(0, 10))}
                   </time>
                 </div>
-                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                  {r.description}
-                </p>
+                <div className="mt-1 flex gap-3">
+                  {r.photo_url ? (
+                    // Report photos live on Supabase Storage (or the committed
+                    // placeholder in demo mode); next/image would need every host
+                    // configured, so a plain img keeps any URL working.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={r.photo_url}
+                      alt="Photo attached to this report"
+                      className="h-16 w-16 shrink-0 rounded border border-neutral-200 object-cover dark:border-neutral-700"
+                    />
+                  ) : null}
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {r.description}
+                  </p>
+                </div>
               </li>
             ))}
           </ul>

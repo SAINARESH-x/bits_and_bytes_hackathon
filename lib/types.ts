@@ -33,14 +33,11 @@ export type DelayReason =
   | "other";
 
 export type ReportType =
-  | "pothole"
-  | "open_trench"
-  | "damaged_structure"
-  | "blocked_drain"
-  | "waterlogging"
-  | "debris_obstruction"
-  | "unsafe_opening"
-  | "unlisted_digging"
+  | "unsafe_barricade"
+  | "work_stalled"
+  | "poor_road_restoration"
+  | "debris_dust_noise"
+  | "unlisted_work"
   | "other";
 
 export type VerificationVote = "confirm" | "dispute";

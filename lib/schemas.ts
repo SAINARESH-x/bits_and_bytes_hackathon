@@ -67,14 +67,11 @@ export const delayReasonEnum = z.enum([
 ]);
 
 export const reportTypeEnum = z.enum([
-  "pothole",
-  "open_trench",
-  "damaged_structure",
-  "blocked_drain",
-  "waterlogging",
-  "debris_obstruction",
-  "unsafe_opening",
-  "unlisted_digging",
+  "unsafe_barricade",
+  "work_stalled",
+  "poor_road_restoration",
+  "debris_dust_noise",
+  "unlisted_work",
   "other",
 ]);
 
@@ -205,12 +202,34 @@ export function isPastPlannedEnd(
 // Citizen reports
 // ---------------------------------------------------------------------------
 
+/**
+ * A stored photo is either an absolute URL (Supabase Storage, or any https
+ * host) or an app-local path such as `/report-placeholder.svg` (demo mode).
+ * A blank string from a form normalises to null rather than failing.
+ */
+const photoUrlSchema = z.preprocess(
+  (v) => (v === "" || v === undefined ? null : v),
+  z
+    .string()
+    .trim()
+    .max(2048, "Photo URL is too long")
+    .refine(
+      (v) => v.startsWith("/") || /^https?:\/\//i.test(v),
+      "Photo must be an https URL or an app-local path",
+    )
+    .nullable(),
+);
+
 export const citizenReportInputSchema = z
   .object({
     project_id: z.string().uuid().nullable().optional(),
     report_type: reportTypeEnum,
-    description: z.string().trim().min(5, "Describe what you saw"),
-    photo_url: z.string().url("Photo must be a URL").nullable().optional(),
+    description: z
+      .string()
+      .trim()
+      .min(10, "Please describe what you saw in at least 10 characters")
+      .max(500, "Please keep the description under 500 characters"),
+    photo_url: photoUrlSchema,
     lat: z.coerce.number().min(-90).max(90),
     lng: z.coerce.number().min(-180).max(180),
     is_unlisted_work: z.boolean().default(false),
@@ -227,6 +246,17 @@ export const citizenReportInputSchema = z
   });
 
 export type CitizenReportInput = z.infer<typeof citizenReportInputSchema>;
+
+/**
+ * The vote payload, minus the project id — the route takes that from the path
+ * so a caller cannot vote on a different project than the one in the URL.
+ */
+export const verdictInputSchema = z.object({
+  vote: verificationVoteEnum,
+  device_id: deviceIdSchema,
+});
+
+export type VerdictInput = z.infer<typeof verdictInputSchema>;
 
 // ---------------------------------------------------------------------------
 // Verifications

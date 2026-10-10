@@ -224,7 +224,7 @@ describe("planted demo scenarios", () => {
     const unlisted = data.citizen_reports.filter((r) => r.is_unlisted_work);
     expect(unlisted).toHaveLength(1);
     expect(unlisted[0].project_id).toBeNull();
-    expect(unlisted[0].report_type).toBe("unlisted_digging");
+    expect(unlisted[0].report_type).toBe("unlisted_work");
   });
 
   it("(f) FLAGSHIP: water completed ~70 days ago, power cable starting in ~3 weeks", () => {

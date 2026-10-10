@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/states";
 import { UpcomingPanel } from "@/components/upcoming-panel";
 import type { Clash } from "@/lib/clash/types";
 import { applyFilters, buildFilterLookup } from "@/lib/filters";
-import type { Department, Project, RoadSegment } from "@/lib/types";
+import type { CitizenReport, Department, Project, RoadSegment } from "@/lib/types";
 
 interface MapScreenProps {
   projects: readonly Project[];
@@ -15,6 +15,8 @@ interface MapScreenProps {
   departments: readonly Department[];
   /** Clashes over the whole registry, so filtering the map keeps every badge. */
   clashes?: readonly Clash[];
+  /** Unlisted-work reports to pin on the map (PLAN.md M6 item 3). */
+  unlistedReports?: readonly CitizenReport[];
 }
 
 /**
@@ -31,6 +33,7 @@ export function MapScreen({
   segments,
   departments,
   clashes,
+  unlistedReports = [],
 }: MapScreenProps) {
   const { filters, clearFilters } = useFilters();
 
@@ -87,6 +90,7 @@ export function MapScreen({
         segments={segments}
         departments={departments}
         clashes={clashes}
+        unlistedReports={unlistedReports}
         showTextList
       />
 
