@@ -1,303 +1,379 @@
-# DigSync
+# GeoMesh — Public Works & Utility Clash Tracker
 
 > **Simulated demo data — not real projects.** Every project, department,
-> contractor, budget and citizen report in this app is fictional. See
-> [Simulated data disclosure](#simulated-data-disclosure).
+> contractor, budget, clash and citizen report in this app is fictional. See
+> [Demo credentials & simulated data disclosure](#7-demo-credentials--simulated-data-disclosure).
 
-## Problem
+**One-liner:** GeoMesh is a public registry and coordination layer for civic
+works that catches the same road being dug up twice — by flagging live
+inter-departmental work clashes with a pure spatial-temporal engine, surfacing
+unlisted digging through citizen reports, and scoring departments on public
+delays, repeat digs and contested completions.
 
-Residents see roads dug up, drains repaired and pipelines laid every day, but
-rarely know what is being done, by whom, how long it will take, or why a
-deadline slipped. Information is scattered across offices, notice boards and
-informal channels. Departments themselves often work without knowing what the
-others have planned, so the same road gets opened several times in a few
-months — traffic disruption, safety hazards, wasted public money and lost
-trust.
+---
 
-## Solution
+## Quick Links
 
-DigSync is a public registry plus a coordination layer for civic works. It puts
-every project on one map with its department, contractor, purpose, planned vs
-actual dates and delay reason, and adds a **clash-detection engine** that flags
-two specific failure modes:
-
-1. **Concurrent overlap** — different departments working on the same or an
-   adjacent road at the same time, which is an opportunity to coordinate.
-2. **Repeat dig** — work starting within 180 days of a road being restored,
-   which is wasted money.
-
-For each clash it proposes a coordinated schedule (merge the two works into one
-shared window, or batch the later dig with the next planned one) so the road is
-opened once instead of twice. Citizens can follow projects, report issues with a
-geotagged photo (including digs that are not listed anywhere) and confirm or
-dispute whether a job marked "completed" is really finished.
-
-## Features
-
-_(Built across milestones M1–M8.)_
-
-- **M1 (done):** Next.js App Router + TypeScript + Tailwind scaffold, root
-  layout with nav and a persistent "Simulated demo data" banner, home page,
-  Leaflet map shell loaded client-side only, `/api/health` mode endpoint,
-  demo-mode data layer falling back to `data/seed.json`.
-- **M2 (done):** Postgres schema, simulated seed dataset (39 projects, road
-  segments, updates, citizen reports) and the data-access layer with
-  Supabase ⇄ demo auto-switching.
-- **M3 (done): public registry.** `/map` draws one polyline per road segment
-  with a status legend that never relies on colour alone (glyph + line style +
-  colour) and a click popup linking to the project; a shareable filter bar
-  (department, status, type, ward, date range, text search) stored in the URL
-  query string; `/projects` as a sortable table on desktop and cards with a
-  **Map | List** toggle on mobile; `/projects/[id]` with purpose, contractor,
-  simulated budget, a shared-axis **PLANNED vs ACTUAL** timeline showing delay
-  days, the updates feed with delay reasons, and citizen reports. An
-  **Upcoming disruptions** panel lists works starting or active in the next 30
-  days, filterable by ward. Every screen has loading, empty and error states.
-- **M4 (done): clash-detection engine + clash board.** `lib/clash/` is a pure,
-  unit-tested module (no UI, no database, no framework imports) that takes the
-  registry plus road geometry and returns clashes, 3+-way clusters and a list of
-  rows it could not check. It buckets projects by road segment and grid cell
-  before sweeping dates, so 500 projects are analysed in milliseconds rather
-  than naively comparing every pair. Results appear on `/clashes` grouped by
-  severity with a plain-language "why flagged", the simulated cost at risk, a
-  proposed coordinated window, a zoomable map of the road and a severity filter;
-  as **⚠ badges on the map polylines**; as clash counts in the project list and
-  table; and as a **Clash alerts** section on every project page. `GET
-  /api/clashes` serves the same board as cacheable JSON.
-- Live clash preview while creating a project. _(M5 — done in `/console`.)_
-- **M6 (done): citizen layer.** `/report` files a geotagged issue with an
-  optional photo and a location captured three ways (browser geolocation,
-  a tap on the Leaflet picker, or typed coordinates — so denied permission
-  never blocks a report). The server re-runs the same pure proximity logic:
-  a report within **100 m** of an active project's road segment is linked to
-  it, otherwise it is flagged `is_unlisted_work` and pinned as its own marker
-  on `/map`. Photos are downscaled in-browser to ≤ 1 MB, re-validated and
-  metadata-stripped server-side, then uploaded to Supabase Storage (or the
-  committed placeholder in demo mode). Anyone can **follow** a project (stored
-  on the device, no account) and see a **"what changed since your last visit"**
-  feed at `/following`. On a completed project, residents **confirm or dispute**
-  that it is really finished — one vote per device, backed by a DB unique
-  constraint — and a completion with ≥ 3 disputes (or ≥ 40% of votes) is marked
-  **Contested** and surfaced on `/dashboard`.
-- Transparency dashboard: delays, repeat digs, contested completions,
-  per-department scorecard. _(M7 — the contested-completions slice ships with
-  M6; the rest is pending.)_
-
-## Department console (`/console`)
-
-The demo stand-in for the official flow, gated by the shared
-`DEMO_PASSCODE` env var (server-side check, **httpOnly** session cookie, and a
-5-attempts-per-15-minutes per-IP rate limit on the login). With the variable
-unset the console is disabled outright — there is no open-by-default fallback.
-Everything written here goes to the same simulated registry that backs the
-public site: a project created in the console appears on the map, in the list,
-and on the clash board immediately (in demo mode these in-memory rows reset
-when the server restarts).
-
-- **New Project form** — Zod-validated (same schema client and server) with a
-  **live clash preview** panel that re-runs the pure clash engine against the
-  registry as you edit road segment, department, dates, status and budget, so
-  an overlap or repeat-dig warning — with the engine's coordination suggestion
-  — appears *before* the project is saved. Impossible calendar dates
-  (e.g. `2026-02-30`) and inverted windows are rejected by the shared schema
-  and flagged in the preview.
-- **Add Update form** — appends a row to a project's permanent status history
-  (updates are **append-only**; nothing edits or deletes an existing entry).
-  When the selected project is past its planned end, a **delay reason is
-  required** — enforced in the form and re-checked server-side against the
-  server's own clock.
-
-**Scope note:** in production this console would use real authentication —
-Supabase Auth with role-based access and RLS-backed writes — rather than a
-shared passcode. The passcode + httpOnly cookie is the hackathon stand-in, and
-the data-honesty rules (see [Simulated data disclosure](#simulated-data-disclosure))
-apply to everything created through it.
-
-## Citizen layer (`/report`, `/following`, verification)
-
-- **Report an issue** (`/report`) captures a type (unsafe barricade, work
-  stalled, poor road restoration, debris / dust / noise, unlisted work, other),
-  a 10–500-character description, an optional photo and a location. Location
-  works with or without geolocation permission: *Use my location* fills it in,
-  and a tap on the map or typed latitude/longitude always works as a fallback.
-- **Auto-linking.** `POST /api/reports` re-runs the pure proximity check
-  (`lib/geo-link.ts`) over the registry the server actually holds. A report
-  within 100 m of an **active** project (planned / in progress / stalled) links
-  to it; no match — or an explicit "this is unlisted work" — sets
-  `is_unlisted_work = true`. Unlisted reports appear as distinct markers on
-  `/map` and in its keyboard-accessible text list.
-- **Photos.** The browser downscales and re-encodes the image to ≤ 1 MB before
-  upload; the server re-checks the MIME type and byte length, sniffs the real
-  container, and strips JPEG/PNG/WebP metadata (including GPS EXIF) before
-  storing it. With no Storage configured, reports still work and the upload
-  route returns the committed placeholder image with an explicit notice.
-- **Following.** `/following` lists the projects this device follows with a
-  "what changed since your last visit" indicator. Follows and the last-seen
-  timestamp live in `localStorage` (wrapped in try/catch, degrading to empty),
-  so no account is needed.
-- **Completion verification.** A `completed` project shows Confirm / Dispute
-  buttons. One vote per **device** — the id is minted in `localStorage` and the
-  DB enforces `unique (project_id, device_id)`, so clearing the browser store
-  cannot buy a second vote. A completion is **contested** at ≥ 3 disputes or
-  ≥ 40% of all votes, and contested completions are listed on `/dashboard`.
-- **Abuse & robustness.** Every write route runs server-side Zod, a honeypot
-  field, and a per-IP in-memory rate limit; the browser client retries once on
-  network/timeout (never on an HTTP error) and surfaces a friendly message, so
-  a slow or offline connection degrades gracefully.
-
-## How the clash engine decides
-
-The engine is a pure function — `detectClashes(projects, segments, options)` —
-so the same registry always yields the same board, and every rule is testable
-without a browser or a database.
-
-- **Which dates:** actual dates where they exist, planned dates otherwise.
-  Rows with missing, unparseable (`2026-02-30`) or inverted dates are reported in
-  a `skipped` list with a reason instead of being silently dropped or throwing.
-- **Which roads count as "the same":** the same road segment, or two segments
-  whose geometries come within **50 m** of each other (adjacency radius).
-- **Concurrent overlap:** spatially related, two different departments, and the
-  two windows intersect for at least one day (touching dates — one road opening
-  as the other closes — count as a 1-day overlap).
-- **Repeat dig:** a work starts between 1 and **180 days** after a related work
-  finished restoring the road.
-- **Severity** is scored 0–100 from how long the works overlap (0–35), how short
-  the repeat-dig gap is (0–25), how large the budgets involved are (0–25) and how
-  many works share the road (0–20), then banded high / medium / low. Same
-  department pairs are always low severity unless the caller opts in.
-- **3+ way conflicts** are grouped into one cluster (stable id, no duplicated
-  pairs) rather than being reported as a pile of two-way cards.
-
-Distances are computed with hand-written haversine and point-to-segment maths in
-a local metre frame — **no `turf.js` dependency** — which is also the honest
-disclosure that no spatial library is doing the work.
-
-## Architecture
-
-```
-app/(public)/           Public routes: /, /map, /projects, /projects/[id], /clashes,
-                        /report, /following, /dashboard
-app/(public)/*/loading, error, not-found
-                        Per-route skeleton, retryable error and 404 states
-app/console/            Department console (DEMO_PASSCODE gate): new project
-                        with live clash preview + append-only status updates
-app/api/health/         Health endpoint reporting demo | supabase mode
-app/api/clashes/        GET the computed clash board as cacheable JSON
-app/api/console/        login / logout / projects / updates (server-validated)
-app/api/reports/        POST a citizen report (auto-links by proximity) and
-                        POST a photo (validated + metadata-stripped + uploaded)
-app/api/projects/[id]/verdicts/  POST confirm/dispute, one per device
-components/             UI. Leaflet lives behind next/dynamic (ssr: false);
-                        the legend and text list render in server HTML
-lib/data.ts             Data access: Supabase when configured, seed.json otherwise
-lib/console-auth.ts     Server-only console session: HMAC passcode + httpOnly
-                        cookie + constant-time compare (demo-grade, not prod)
-lib/console-rate-limit.ts  Per-IP sliding window on failed logins
-lib/console-api.ts      Console JSON error shapes (re-exports lib/api-response)
-lib/api-response.ts     Shared JSON error shapes for every write route
-lib/api-client.ts       Browser fetch wrapper: timeout + one network-only retry
-lib/rate-limit.ts       In-memory sliding-window limiter (per process instance)
-lib/client-ip.ts        Best-effort client IP for rate limiting
-lib/geo-link.ts         Pure proximity check: report → nearest active project
-lib/contested.ts        Pure "contested completion" rule (≥3 or ≥40% disputes)
-lib/follows.ts          localStorage follows + last-seen timestamp (try/catch)
-lib/follow-activity.ts  Pure "what changed since last visit" helpers
-lib/device.ts           Device UUID + remembered votes in localStorage
-lib/report-photo.ts     Shared placeholder-photo constant
-lib/image/compress.ts   Browser downscale / re-encode to ≤ 1 MB (canvas)
-lib/image/metadata.ts   Server-side JPEG/PNG/WebP metadata stripper (no deps)
-lib/supabase/storage.ts Server-only Storage upload (service-role key)
-lib/filters.ts          Pure filter/sort state shared by /map and /projects
-lib/map-lines.ts        Pure polyline builder: groups projects per segment and
-                        offsets overlapping lines so each stays clickable
-lib/geometry.ts         Pure geometry helpers (perpendicular offset, midpoint)
-lib/format.ts           Date/delay/number formatting and status → style maps
-lib/clash/              Pure clash-detection engine (no UI or DB imports)
-lib/clash-view.ts       Pure clash helpers shared by server and browser
-lib/clashes.ts          Server-side loader: registry + engine → board payload
-lib/supabase/           Supabase client factory (returns null without env vars)
-lib/types.ts            Shared domain types
-data/seed.json          Simulated dataset backing demo mode
-supabase/schema.sql     Postgres schema + Storage bucket (optional — demo needs no DB)
-scripts/verify-*.mjs    End-to-end checks (server HTML + headless Chrome)
-tests/                  Vitest unit tests
-```
-
-Data flow: server components read through `lib/data.ts`, which returns
-`data/seed.json` when Supabase env vars are absent or the database is
-unreachable (3 s timeout, then fall back). Mutation endpoints re-validate every
-payload with Zod on both client and server.
-
-## Open-source libraries & APIs
-
-_(Disclosure is required by the hackathon rules; this list is kept current
-with `package.json`.)_
-
-- [Next.js](https://nextjs.org) 15.5.27 — App Router, MIT
-- [React](https://react.dev) 19.1.0 — MIT
-- [Tailwind CSS](https://tailwindcss.com) 4 — MIT
-- [TypeScript](https://www.typescriptlang.org) — Apache-2.0
-- [Supabase JS](https://github.com/supabase/supabase-js) — Apache-2.0
-- [Leaflet](https://leafletjs.com) 1.9.4 — BSD-2-Clause
-- [react-leaflet](https://github.com/PaulLeCam/react-leaflet) 5.0.0 — MIT
-- [Recharts](https://recharts.org) — MIT
-- [Zod](https://zod.dev) — MIT
-- [Vitest](https://vitest.dev) — MIT
-- [ESLint](https://eslint.org) + eslint-config-next — MIT
-- **OpenStreetMap tiles** — © OpenStreetMap contributors, ODbL. Attributed on
-  the map itself.
-
-Not used, deliberately: **no `turf.js`** (or any spatial library). The clash
-engine's distance maths — haversine plus point-to-segment proximity in a local
-metre frame — is hand-written in `lib/clash/geo.ts` and unit-tested, so the
-spatial logic is inspectable and adds no dependency.
-
-Also deliberate: **no image-processing or EXIF library** (no `sharp`, no
-`piexifjs`). The browser downscales report photos with a plain `<canvas>`, and
-`lib/image/metadata.ts` strips metadata by parsing the JPEG / PNG / WebP
-container bytes by hand. This adds no dependency and keeps the logic testable
-(`tests/image-metadata.test.ts`), and any format it does not recognise is
-returned unchanged with `stripped: false` rather than corrupted.
-
-**Rate limiting is in-memory and therefore per process instance.** On a
-multi-instance deploy the effective limit is `limit × instances`. It is an
-honest demo-grade guard against casual spam — not a substitute for a distributed
-limiter (e.g. Upstash/Redis) in production. The same applies to the console's
-login limiter.
-
-## Setup
-
-```sh
-git clone git@github.com:SAINARESH-x/bits_and_bytes_hackathon.git
-cd bits_and_bytes_hackathon
-npm install
-cp .env.example .env.local   # optional — leave blank for demo mode
-# To use /console, set DEMO_PASSCODE (e.g. `echo "DEMO_PASSCODE=digsync-demo" >> .env.local`)
-npm run dev                  # http://localhost:3000
-```
-
-Scripts:
-
-| Command | Purpose |
+| | |
 | --- | --- |
-| `npm run dev` | Dev server |
-| `npm run build` | Production build |
-| `npm start` | Serve the production build |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Vitest unit tests |
-| `node scripts/verify-m3.mjs` | Server-HTML checks (start `npm start` first) |
-| `node scripts/verify-m4.mjs` | Clash-board checks: API shape, ordering, badges |
-| `node scripts/verify-browser.mjs` | Headless-Chrome UI checks (start `npm start` first) |
+| 🚀 **Live demo** | https://geomesh-civic.vercel.app |
+| 🗺️ **Repository** | [`SAINARESH-x/GeoMesh`](https://github.com/SAINARESH-x/GeoMesh) |
+| 👤 **Author** | SAI NARESH P · Roll No: EC24B1038 |
+| 🐙 **GitHub** | https://github.com/SAINARESH-x |
+| 💼 **LinkedIn** | https://www.linkedin.com/in/sai-naresh-3a420331a |
 
-The `verify-*` scripts expect a production server on port 3100:
+---
+
+## 1. Problem Statement & Solution
+
+### Problem Statement
+
+**CivicTech — Improving Transparency and Coordination in Public Works Projects.**
+
+Residents watch the same stretch of road get dug up, patched and dug up again,
+but the plan, the department, the contractor and the deadline live in separate
+offices. No one can answer *what is being dug here, by whom, until when, and why
+it slipped*. Worse, the departments themselves often don't know what the others
+have planned, so a freshly restored road is opened again weeks later — wasting
+public money and compounding traffic and safety hazards.
+
+### Our Solution
+
+GeoMesh gives every civic work one public record and one coordinate system, then
+adds a coordination brain on top:
+
+1. **Spatial-temporal conflict detection engine** — a pure, unit-tested module
+   (`lib/clash/`) that finds two failure modes: **concurrent overlaps** (two
+   departments on the same/adjacent road at once) and **repeat digs** (work
+   starting within 180 days of a road being restored), scores their severity,
+   and proposes a coordinated schedule that opens the road once instead of twice.
+2. **Citizen-led unlisted-work reporting** — geotagged issue reports that are
+   auto-linked to the nearest active project by proximity, or flagged as
+   `is_unlisted_work` when no registry entry exists — the one signal with no
+   official line to sit on.
+3. **Public accountability scorecards** — a transparency dashboard of delays,
+   repeat digs, contested "completed" jobs and a per-department scorecard.
+
+---
+
+## 2. Key Features & Screenshots
+
+### Live Clash Map
+
+One polyline per road segment with a status legend that never relies on colour
+alone (glyph + line style + colour), click popups linking to the project, and
+**⚠ clash badges** on flagged roads. Unlisted-work reports are pinned as their
+own markers, and a keyboard-accessible text list mirrors the map.
+
+### Citizen Reporting & Spatial Auto-linking
+
+`/report` captures a geotagged issue (browser geolocation, a tap on the Leaflet
+picker, or typed coordinates) with an optional photo. The server re-runs the same
+pure proximity logic: a report within **100 m** of an active project links to it;
+otherwise it becomes an **unlisted work**. Citizens can follow projects (no
+account), see a "what changed since your last visit" feed, and confirm or dispute
+a completion.
+
+### Public Dashboard & Waste Metrics
+
+Delays, repeat digs, contested completions and a sortable per-department
+scorecard, with a headline **simulated** waste figure for repeat digs. Each
+Recharts panel has a plain data table beside it as a text alternative.
+
+### Admin Console (`/console`)
+
+The department-side flow, gated by the shared `DEMO_PASSCODE`: a **New Project**
+form with a **live clash preview** that re-runs the engine as you edit dates,
+road and department, and an **Add Update** form that appends to a permanent
+(append-only) status history — with a delay reason required once a project is
+past its planned end.
+
+### Visual Showcase (optional)
+
+Screenshot placeholders live under `docs/images/`; drop the captures there to
+render them.
+
+| Screen | Preview |
+| --- | --- |
+| Live clash map & project markers | ![Live clash map and project markers](docs/images/map.png) |
+| Citizen report form with geotagged location | ![Citizen report form with geotagged location](docs/images/report.png) |
+| Transparency dashboard with KPIs and department scorecard | ![Transparency dashboard with KPIs and department scorecard](docs/images/dashboard.png) |
+| Department console with live clash preview | ![Department console with live clash preview](docs/images/console.png) |
+
+---
+
+## 3. HOW THE CLASH ENGINE WORKS
+
+The engine lives entirely in **`lib/clash/`** — a **pure** module with no UI,
+database, framework or `window` imports. It is deterministic: the same registry
+always yields the same board, which is what lets the API cache it and the tests
+assert on it.
+
+```
+lib/clash/
+├── types.ts     Vocabulary: Clash, ClashType, Severity, options, result shape
+├── window.ts    Date parsing + work-window resolution
+├── geo.ts       Hand-written haversine / point-to-segment / polyline distance
+├── severity.ts  The documented 0–100 severity formula
+├── suggest.ts   Coordination proposals (merge / batch / coordinate)
+└── detect.ts    detectClashes(projects, segments, options) — the rules
+```
+
+```ts
+const { clashes, clusters, skipped } = detectClashes(projects, segments, { now });
+```
+
+### Spatial buffer rules
+
+- Two projects are **spatially related** when they share the same
+  `road_segment_id`, **or** when the closest approach of their polylines is
+  `<= adjacencyMeters` (**default 50 m**).
+- Distances are computed in a **local metre frame** with hand-written
+  **haversine** and **point-to-segment** maths (`lib/clash/geo.ts`).
+  **No `turf.js` or any spatial library** is used — the maths is inspectable and
+  unit-tested.
+- Segment-to-segment distance is exact: if the polylines intersect it is `0`,
+  otherwise the minimum is always attained at an endpoint (four point-to-segment
+  calls, no iterative solver).
+- Adjacency is **grid-bucketed** (one cell = one adjacency radius), so only
+  segments sharing or neighbouring a cell are ever compared.
+
+### Temporal overlap logic
+
+- A work's window is `actual_start ?? planned_start` … `actual_end ?? planned_end`
+  (real dates win over planned, field by field).
+- **Concurrent overlap:** spatially related, **different departments**, and the
+  two windows intersect for at least one day. Overlap is **inclusive** — a work
+  ending 10 June and one starting 10 June share that day (1 day of overlap, not
+  zero).
+- **Repeat dig:** a strictly positive gap — `end(A) < start(B)` — of at most
+  **`repeatDigWindowDays` (default 180 days)**. Overlap and repeat-dig are
+  mutually exclusive, so one unordered pair yields at most one clash.
+- **Cancelled** projects are excluded outright. A row with **missing**,
+  **unparseable** (`2026-02-30`) or **inverted** dates (end before start) is
+  reported in `skipped` with a reason — the engine **never throws**, so one bad
+  row cannot blank the whole board.
+- **Same-department** pairs are still reported (a sequencing mistake worth
+  seeing) but forced to severity `low`, unless `ignoreSameDepartment: true`.
+
+### Clash severity levels
+
+Severity is a documented, reproducible **0–100 score** (`lib/clash/severity.ts`):
+
+| Term | Range | Rule |
+| --- | --- | --- |
+| **time** | 0–35 | Overlap: `min(overlapDays, 60) / 60 × 35`. Repeat dig: `(1 − min(gapDays, window) / window) × 35` (shorter gap scores higher). |
+| **money** | 0–25 | `min((budgetA + budgetB) / ₹50,00,000, 1) × 25`. Missing budgets contribute 0. |
+| **utility** | 0–20 | `((weightA + weightB) / 2) × 20`. Weights: road `1.0`, water `0.9`, drain `0.85`, power `0.7`, fibre `0.5`. |
+| **crowd** | 0–20 | `min(clusterSize, 5) / 5 × 20` — a 5-way tangle saturates; a 2-way pair scores 8. |
+
+Bands: **`score ≥ 66 → high`**, **`score ≥ 33 → medium`**, otherwise **`low`**.
+
+Each clash carries a plain-language **`explanation`** ("why flagged", safe for a
+citizen) and a **`suggestion`** coordination proposal:
+
+- **Overlap → merge** into one window `[min(starts), max(ends)]` — one shared
+  trench, saving ~35% of the smaller budget.
+- **Repeat dig → batch/merge** so the later dig is batched with the next planned
+  one — saving ~60% of the smaller budget. Every rupee figure is labelled
+  `(simulated estimate)`.
+
+### Complexity & scaling
+
+The naive shape is `O(projects²)`. Instead:
+
+1. Projects are bucketed by `road_segment_id` in one pass.
+2. Segment adjacency is computed **once**, grid-bucketed, and only for segments
+   that actually carry projects.
+3. Only same/adjacent-segment pairs are compared, and each segment list is
+   sorted by start date so the inner loop **breaks early** once the gap exceeds
+   the repeat-dig window.
+
+The result is effectively `O(projects · neighbours)`; 3+-way conflicts are
+grouped into a single cluster (stable ids, no duplicated pairs) via union-find.
+A **500-project** performance test asserts the whole run stays **well under
+300 ms**, and output order is deterministic (severity, then estimated waste,
+then ids) — never map order.
+
+### Test coverage in `lib/`
+
+`npm test` runs **18 Vitest files (273 test cases)**. The engine carries the
+heaviest coverage:
+
+- **`tests/clash.test.ts`** — engine contract & defaults, severity bands and
+  utility weights, geometry helpers, work-window resolution, identical- and
+  adjacent-segment overlaps, non-overlapping windows, touching dates, repeat
+  digs inside/at/outside the 180-day window, same-department pairs, cancelled &
+  inverted rows, missing dates, empty input, a 3-way cluster with no duplicated
+  pairs, determinism (order-insensitive input, stable output), the 500-project
+  performance budget, and the flagship seed story (a water main followed by a
+  power cable **91 days** later, plus the four-way Amber Garden Road cluster).
+- **`tests/clash-view.test.ts`** — the browser-safe shared helpers and the API
+  payload summary.
+- **`tests/geo-link.test.ts`** — the 100 m citizen auto-link boundary.
+- **`tests/contested.test.ts`** — both contest thresholds and their edges.
+- Plus `data`, `console-auth`, `console-schemas`, `dashboard-metrics`,
+  `image-metadata`, `rate-limit`, `filters`, `format`, `geometry`, `map-lines`,
+  `follow-activity`, `follow-display`, `seed` and `seed-dates` suites.
+
+---
+
+## 4. Architecture & Data Model
+
+### Architecture
+
+```mermaid
+flowchart TD
+    subgraph Browser["Browser (mobile-first, accessible)"]
+        UI["React 19 UI<br/>Server-rendered HTML + client islands"]
+        LEAFLET["Leaflet + react-leaflet<br/>(next/dynamic, ssr: false)"]
+        RECHARTS["Recharts panels<br/>(ssr: false + text tables)"]
+    end
+
+    subgraph Next["Next.js 15 App Router (Vercel)"]
+        RSC["Server Components<br/>/  /map  /projects/[id]<br/>/clashes  /dashboard  /following"]
+        CONSOLE["/console<br/>DEMO_PASSCODE gate + live clash preview"]
+        API["Route Handlers (Zod-validated)<br/>/api/health · /api/clashes<br/>/api/reports · /api/reports/photo<br/>/api/projects/[id]/verdicts<br/>/api/console/login|logout|projects|updates"]
+        CLASH["lib/clash/ — pure clash engine<br/>detectClashes()"]
+    end
+
+    subgraph Store["Store layer"]
+        DATA["lib/data.ts<br/>DataStore façade + demo/Supabase switch<br/>(3 s timeout, auto-fallback)"]
+        SEED[("data/seed.json<br/>in-memory demo store")]
+        SUPA[("Supabase Postgres + Storage<br/>optional, RLS public-read")]
+    end
+
+    OSM["OpenStreetMap tile servers<br/>© OpenStreetMap contributors (ODbL)"]
+
+    UI --> RSC
+    UI --> CONSOLE
+    LEAFLET --> RSC
+    RECHARTS --> RSC
+    UI -- fetch + timeout/retry --> API
+    RSC --> CLASH
+    RSC --> DATA
+    CONSOLE --> API
+    API --> DATA
+    API --> CLASH
+    CLASH -. pure .- DATA
+    DATA --> SEED
+    DATA -. optional .-> SUPA
+    LEAFLET -- tile requests --> OSM
+```
+
+**Data flow:** server components read through `lib/data.ts`, which returns
+`data/seed.json` when Supabase env vars are absent or the database is
+unreachable (3 s timeout, then fall back — the app keeps working). All mutations
+go through Route Handlers that **re-validate every payload with the shared Zod
+schemas** on both client and server. Leaflet never runs on the server — it is
+loaded behind `next/dynamic` with `ssr: false`.
+
+### Data model
+
+Types are defined in `lib/types.ts` and mirror `supabase/schema.sql` exactly.
+**Every row carries `is_simulated = true`.**
+
+| Entity | Key fields | Notes |
+| --- | --- | --- |
+| **Departments** | `id`, `name`, `code`, `is_simulated` | Generic names — Roads, Water Board, Power Utility, Storm-water Drains, Telecom Fibre. |
+| **Road segments** | `id`, `name`, `ward`, `geometry` (GeoJSON LineString, EPSG:4326) | Stored as `jsonb` so no PostGIS extension is required. |
+| **Projects** | `id`, `title`, `purpose`, `project_type`, `department_id`, `contractor_name`, `road_segment_id`, `planned_start/end`, `actual_start/end`, `status`, `budget_inr` | Status ∈ `planned · in_progress · stalled · completed · cancelled`. Types ∈ `road · drain · water_pipeline · power_cable · fibre · other`. |
+| **Project updates** | `id`, `project_id`, `status`, `note`, `delay_reason`, `new_planned_end`, `created_at` | **Append-only** audit log — never updated or deleted. |
+| **Citizen reports** | `id`, `project_id` (nullable), `report_type`, `description`, `photo_url`, `lat`, `lng`, `is_unlisted_work`, `created_at` | `project_id = null` + `is_unlisted_work = true` is digging with **no registry entry**. |
+| **Verifications** | `id`, `project_id`, `vote` (`confirm`/`dispute`), `device_id`, `created_at` | `unique (project_id, device_id)` — one vote per device. |
+| **Clashes** | *computed, not stored* | Derived by `lib/clash/` from the registry; `GET /api/clashes` exposes the board as cacheable JSON. |
+
+The seed dataset backing demo mode contains **5 departments, 12 road segments,
+39 projects, 7 updates, 16 citizen reports and 10 verifications**, with planted,
+deterministic clash scenarios (including the flagship 91-day repeat dig and a
+contested completion).
+
+---
+
+## 5. Open-Source Libraries & Services
+
+Versions are taken directly from `package.json`. All are **free / open source**
+— no paid services are used.
+
+| Name | Version | Purpose | License / Source |
+| --- | --- | --- | --- |
+| [Next.js](https://nextjs.org) | `15.5.27` | App Router framework, server components, Route Handlers, build | MIT |
+| [React](https://react.dev) | `19.1.0` | UI library (`react-dom` `19.1.0`) | MIT |
+| [Leaflet](https://leafletjs.com) | `^1.9.4` | Interactive map rendering | BSD-2-Clause |
+| [react-leaflet](https://github.com/PaulLeCam/react-leaflet) | `^5.0.0` | React bindings for Leaflet (client-only) | MIT |
+| [Recharts](https://recharts.org) | `^2.15.0` | Dashboard charts | MIT |
+| [Zod](https://zod.dev) | `^3.24.1` | Shared client + server schema validation | MIT |
+| [Supabase JS](https://github.com/supabase/supabase-js) | `^2.49.0` | Optional Postgres / Auth / Storage client | Apache-2.0 |
+| [Tailwind CSS](https://tailwindcss.com) | `^4` | Utility-first styling (`@tailwindcss/postcss` `^4`) | MIT |
+| [TypeScript](https://www.typescriptlang.org) | `^5` | Static typing | Apache-2.0 |
+| [Vitest](https://vitest.dev) | `^3.0.0` | Unit test runner | MIT |
+| [ESLint](https://eslint.org) + `eslint-config-next` | `^9` / `15.5.27` | Linting | MIT |
+| [tsx](https://github.com/privatenumber/tsx) | `^4.23.15` | Runs the TypeScript seed script | MIT |
+| **OpenStreetMap tiles** | live service | Base map tiles | © OpenStreetMap contributors, **ODbL** (attributed on the map) |
+| [Vercel](https://vercel.com) | hosting | Public deployment | Free tier (hosting only) |
+
+**Deliberately not used:** no `turf.js` (or any spatial library) — the clash
+engine's distance maths is hand-written in `lib/clash/geo.ts`; no image/EXIF
+library (no `sharp`, no `piexifjs`) — the browser downscales photos with a plain
+`<canvas>` and `lib/image/metadata.ts` strips metadata by parsing the container
+bytes by hand.
+
+---
+
+## 6. Setup Instructions (Clean Clone)
+
+### Prerequisites
+
+- **Node.js `>= 20`** (declared in `package.json` → `engines`)
+- **npm** (the repo ships a `package-lock.json`)
 
 ```sh
-npm run build
-(npx next start -p 3100 > /tmp/digsync-server.log 2>&1 &)
-node scripts/verify-m3.mjs      # server-rendered HTML
-node scripts/verify-m4.mjs      # clash API + clash board + badges
-node scripts/verify-browser.mjs # real browser: popups, filters, sort, toggle
+git clone git@github.com:SAINARESH-x/GeoMesh.git
+cd GeoMesh
+npm install
+```
+
+### Environment variables
+
+Copy the example file. Everything is optional — with no Supabase values the app
+runs in **demo mode** off `data/seed.json`.
+
+```sh
+cp .env.example .env.local
+```
+
+| Variable | Required? | Purpose |
+| --- | --- | --- |
+| `DEMO_PASSCODE` | Optional | Enables `/console`. If unset, the console is disabled outright (no open fallback). |
+| `NEXT_PUBLIC_SUPABASE_URL` | Optional | Supabase project URL. Blank ⇒ demo mode. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Optional | Public read key. Blank ⇒ demo mode. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional | **Server-only.** Uploads report photos / bypasses RLS. Blank ⇒ placeholder photos. |
+| `SUPABASE_REPORT_BUCKET` | Optional | Storage bucket name (default `report-photos`). |
+
+To enable the demo console:
+
+```sh
+echo "DEMO_PASSCODE=geomesh-demo" >> .env.local
+```
+
+### Running
+<!-- commands verified directly against package.json "scripts" -->
+
+| Command | Runs | Purpose |
+| --- | --- | --- |
+| `npm run dev` | `next dev --turbopack` | Dev server at http://localhost:3000 |
+| `npm run build` | `next build` | Production build |
+| `npm start` | `next start` | Serve the production build |
+| `npm run typecheck` | `tsc --noEmit` | Type-check |
+| `npm run lint` | `eslint .` | Lint |
+| `npm run test` | `vitest run` | Run the unit test suite |
+| `npm run test:watch` | `vitest` | Watch mode |
+| `npm run seed` | `tsx scripts/seed.ts` | Regenerate `data/seed.json` |
+
+```sh
+npm run dev        # http://localhost:3000
+npm run build && npm start
+npm run typecheck && npm run lint && npm run test   # full verification
 ```
 
 Health check (demo mode is the default with no env vars set):
@@ -307,75 +383,95 @@ curl http://localhost:3000/api/health
 # {"ok":true,"mode":"demo","timestamp":"..."}
 ```
 
-The clash board is available as JSON — cached for 60 s, since it is a pure
-function of the registry:
-
-```sh
-curl http://localhost:3000/api/clashes | head -c 200
-# {"clashes":[...],"clusters":[...],"skipped":[],"counts":{...},"mode":"demo",...}
-```
-
 ### Optional: Supabase + photo storage
 
-Demo mode needs no database at all. To persist to Supabase, set
-`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, run
-`supabase/schema.sql` (which creates the tables and a public-read
-`report-photos` storage bucket), and set `SUPABASE_SERVICE_ROLE_KEY` so the
-server can upload report photos. `SUPABASE_REPORT_BUCKET` overrides the bucket
-name (default `report-photos`). With no service-role key the app keeps working:
-photo uploads return the committed placeholder image.
+Demo mode needs no database at all. To persist, set the two `NEXT_PUBLIC_`
+variables, run `supabase/schema.sql` (creates the tables and a public-read
+`report-photos` bucket), and set `SUPABASE_SERVICE_ROLE_KEY` so the server can
+upload report photos. With no service-role key the app keeps working — uploads
+return the committed placeholder image.
 
-## Tests
+---
 
-`npm test` runs the Vitest suite. The clash engine carries the heaviest coverage
-(`tests/clash.test.ts`): identical-segment and adjacent-segment overlaps,
-non-overlapping windows, touching dates (one road opening as another closes),
-repeat digs inside and outside the 180-day window, same-department pairs,
-cancelled and inverted rows, missing dates, empty input, a 3-way cluster with no
-duplicated pairs, determinism (same input → same order), a 500-project
-performance budget, and the flagship seed story (a water pipeline on Amber
-Garden Road followed by a power cable 91 days later). `tests/clash-view.test.ts`
-covers the browser-safe helpers and the API payload summary.
-`tests/console-auth.test.ts` covers the passcode verification, session-cookie
-digest and the rate limiter (boundaries, window expiry, reset), plus the login
-route's disabled / wrong-passcode / rate-limited / success paths and the
-console create route's 401 guard. `tests/console-schemas.test.ts` covers the
-console update schema (a delay reason is allowed alongside any status), the
-past-planned-end rule, and the shared schema now rejecting impossible calendar
-dates like `2026-02-30`.
+## 7. Demo Credentials & Simulated Data Disclosure
 
-The citizen layer is covered by focused unit tests: `tests/geo-link.test.ts`
-(the 100 m auto-link boundary, active-status filtering, nearest-first order),
-`tests/contested.test.ts` (both contest thresholds and their edges),
-`tests/image-metadata.test.ts` (metadata stripped from crafted JPEG / PNG / WebP
-buffers while pixel data survives), `tests/rate-limit.test.ts` (sliding-window
-boundaries and the no-lockout-extension rule), `tests/follow-activity.test.ts`
-and `tests/follow-display.test.ts` (the "what changed" helpers), and
-`tests/data.test.ts` (the report/verification write paths and the new report
-schema constraints).
+### Demo credentials
 
-## Demo video
+| Field | Value |
+| --- | --- |
+| Console passcode (`DEMO_PASSCODE`) | `geomesh-demo` |
 
-_A 2–5 minute walkthrough will be committed here._
+Set `DEMO_PASSCODE=geomesh-demo` (see [Setup](#6-setup-instructions-clean-clone)),
+then open `/console` and enter the passcode. The gate is a server-side check with
+an **httpOnly** session cookie and a 5-attempts-per-15-minutes per-IP limit.
+**This is a hackathon stand-in for real authentication, not production
+security.**
 
-## Simulated data disclosure
+### Simulated data disclosure
 
-**All project, department, contractor, budget and citizen-report data in this
-application is SIMULATED.** Nothing here refers to a real municipal project,
-department or contractor. Road names are fictional and department names are
-deliberately generic. Every record carries `is_simulated = true`, the UI shows
-a persistent "Simulated demo data — not real projects" banner, and
-`/api/health` reports which data mode the app is in. Cost figures produced by the
-clash engine are labelled "(simulated estimate)" wherever they appear, and the
-clash board and `GET /api/clashes` name the source they were computed from.
-Simulated data is never presented as real.
+**All project, department, contractor, budget, clash, delay and citizen-report
+data in this application is SIMULATED.** Nothing here refers to a real municipal
+project, department or contractor.
 
-## Future scope
+- Road names are fictional and department names are deliberately generic.
+- Every record carries `is_simulated = true`.
+- The UI shows a persistent **"Simulated demo data — not real projects"** banner
+  on every screen, and `/api/health` reports which data mode the app is in.
+- Cost figures produced by the clash engine are labelled **(simulated estimate)**
+  wherever they appear.
+- Writes made in demo mode are **in-memory** and reset when the server restarts.
 
-- Real municipal/utility APIs and contractor GSTIN verification.
-- Field-officer mobile app with GPS proof-of-work photos.
-- SMS/WhatsApp/push alerts when a followed project changes.
-- Weighted crowd verification and moderation for reports.
-- ML delay prediction and budget-waste estimation; Open311 export.
-- Multi-city, multilingual, offline PWA; PostGIS spatial indexing; public API;
-  RLS + audit logs; AR "what was dug here" history.
+**Live external data:** only the **OpenStreetMap base map tiles** are live
+external data, loaded from OpenStreetMap tile servers and attributed on the map.
+No other external service is queried in demo mode.
+
+---
+
+## 8. Real-World Feasibility, Limitations & Future Scope
+
+### Current demo limitations
+
+- **In-memory demo persistence.** With no Supabase configured, console writes
+  (new projects, status updates) live for the lifetime of the server process and
+  reset on restart. Set Supabase env vars to persist.
+- **Shared passcode, not real auth.** `/console` uses one passcode + an httpOnly
+  cookie instead of Supabase Auth with roles.
+- **In-memory rate limiting.** Per-process only: on a multi-instance deploy the
+  effective limit is `limit × instances`. An honest demo-grade guard, not a
+  distributed limiter.
+- **Simulated registry.** There is no live feed from any municipality yet.
+
+### Production roadmap
+
+- **Integration with real municipal GIS layers** — ingest road/utility geometry
+  from city GIS and replace `data/seed.json` with the live registry.
+- **Municipal permit APIs** — pull work permits so a new dig is checked against
+  the registry *before* it is approved, and materialise clashes (e.g. PostGIS /
+  GiST indexing, a nightly `clash_reports` view).
+- **Automated citizen report moderation** — weighted crowd verification and a
+  moderation queue for unlisted-work reports (with photo review).
+- **Role-based department access** — Supabase Auth with department `admin` /
+  `department` roles, RLS-backed writes and audit logs instead of a shared
+  passcode.
+- Further out: SMS/WhatsApp alerts on followed-project changes, field-officer
+  mobile proof-of-work photos, ML delay/waste estimation, Open311 export,
+  multi-city / multilingual / offline PWA.
+
+---
+
+## 9. Team Credits
+
+Built during the **IIITDM Kancheepuram 24-hour hackathon**, **CivicTech** track —
+*Improving Transparency and Coordination in Public Works Projects*.
+
+**Solo author:** SAI NARESH P (Roll No: EC24B1038)
+
+| | |
+| --- | --- |
+| 🐙 **GitHub** | https://github.com/SAINARESH-x |
+| 💼 **LinkedIn** | https://www.linkedin.com/in/sai-naresh-3a420331a |
+
+---
+
+<sub>GeoMesh — hackathon demo. All projects, departments and contractors shown
+here are simulated. See [simulated data disclosure](#7-demo-credentials--simulated-data-disclosure).</sub>
