@@ -18,7 +18,7 @@ export default function DashboardError({
       <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
       <ErrorState
         title="The dashboard could not be loaded"
-        body="The verification data did not come back. Nothing is broken on your side — try again in a moment."
+        body="The registry data did not come back. Nothing is broken on your side — try again in a moment."
         onRetry={reset}
       />
       {process.env.NODE_ENV !== "production" && error?.message ? (

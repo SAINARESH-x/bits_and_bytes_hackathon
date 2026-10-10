@@ -1,6 +1,6 @@
-import { ListSkeleton } from "@/components/states";
+import { DashboardSkeleton } from "@/components/states";
 
-/** Shown while the dashboard loads projects and the verification tally. */
+/** Shown while the dashboard loads the registry and computes its metrics. */
 export default function Loading() {
-  return <ListSkeleton />;
+  return <DashboardSkeleton />;
 }
