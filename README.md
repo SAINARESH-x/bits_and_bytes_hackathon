@@ -17,10 +17,24 @@ delays, repeat digs and contested completions.
 | | |
 | --- | --- |
 | 🚀 **Live demo** | https://geomesh-civic.vercel.app |
+| 🎬 **Demo video** | [https://youtu.be/38Rogm0bb0U](https://youtu.be/38Rogm0bb0U) |
 | 🗺️ **Repository** | [`SAINARESH-x/GeoMesh`](https://github.com/SAINARESH-x/GeoMesh) |
 | 👤 **Author** | SAI NARESH P · Roll No: EC24B1038 |
 | 🐙 **GitHub** | https://github.com/SAINARESH-x |
 | 💼 **LinkedIn** | https://www.linkedin.com/in/sai-naresh-3a420331a |
+
+---
+
+## Demo Video
+
+[▶ Watch the GeoMesh demo](https://youtu.be/38Rogm0bb0U) · https://youtu.be/38Rogm0bb0U
+
+The walkthrough demonstrates navigation of the spatial clash engine — locating
+overlapping and repeat-dig works on the map and reading each clash's severity and
+coordinated-schedule proposal — followed by the citizen reporting flow, where a
+geotagged issue auto-links to the nearest active project (or is flagged as
+unlisted work), and closes on the admin console reviewing projects and appending
+status updates behind the `DEMO_PASSCODE` gate.
 
 ---
 
