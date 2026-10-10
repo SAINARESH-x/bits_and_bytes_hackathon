@@ -40,24 +40,47 @@ _(Built across milestones M1–M8.)_
   layout with nav and a persistent "Simulated demo data" banner, home page,
   Leaflet map shell loaded client-side only, `/api/health` mode endpoint,
   demo-mode data layer falling back to `data/seed.json`.
-- Public map and project list with detail pages.
-- Clash detection engine + live clash preview while creating/editing a project.
+- **M2 (done):** Postgres schema, simulated seed dataset (39 projects, road
+  segments, updates, citizen reports) and the data-access layer with
+  Supabase ⇄ demo auto-switching.
+- **M3 (done): public registry.** `/map` draws one polyline per road segment
+  with a status legend that never relies on colour alone (glyph + line style +
+  colour) and a click popup linking to the project; a shareable filter bar
+  (department, status, type, ward, date range, text search) stored in the URL
+  query string; `/projects` as a sortable table on desktop and cards with a
+  **Map | List** toggle on mobile; `/projects/[id]` with purpose, contractor,
+  simulated budget, a shared-axis **PLANNED vs ACTUAL** timeline showing delay
+  days, the updates feed with delay reasons, and citizen reports. An
+  **Upcoming disruptions** panel lists works starting or active in the next 30
+  days, filterable by ward. Every screen has loading, empty and error states.
+- **Clash detection engine** + live clash preview while creating/editing a
+  project. _(M4/M5 — the detail page currently shows a labelled placeholder.)_
 - Citizen layer: follow, geotagged issue reports, confirm/dispute completion.
+  _(M6 — placeholder on the detail page.)_
 - Transparency dashboard: delays, repeat digs, contested completions,
   per-department scorecard.
 
 ## Architecture
 
 ```
-app/                    Next.js App Router routes (public pages + API handlers)
+app/(public)/           Public routes: /, /map, /projects, /projects/[id]
+app/(public)/*/loading, error, not-found
+                        Per-route skeleton, retryable error and 404 states
 app/api/health/         Health endpoint reporting demo | supabase mode
-components/             UI, including the Leaflet map shell (client-only)
+components/             UI. Leaflet lives behind next/dynamic (ssr: false);
+                        the legend and text list render in server HTML
 lib/data.ts             Data access: Supabase when configured, seed.json otherwise
+lib/filters.ts          Pure filter/sort state shared by /map and /projects
+lib/map-lines.ts        Pure polyline builder: groups projects per segment and
+                        offsets overlapping lines so each stays clickable
+lib/geometry.ts         Pure geometry helpers (perpendicular offset, midpoint)
+lib/format.ts           Date/delay/number formatting and status → style maps
 lib/clash/              Pure clash-detection engine (no UI or DB imports)
 lib/supabase/           Supabase client factory (returns null without env vars)
 lib/types.ts            Shared domain types
 data/seed.json          Simulated dataset backing demo mode
 supabase/schema.sql     Postgres schema (optional — demo mode needs no DB)
+scripts/verify-*.mjs    End-to-end checks (server HTML + headless Chrome)
 tests/                  Vitest unit tests
 ```
 
@@ -105,6 +128,17 @@ Scripts:
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | Vitest unit tests |
+| `node scripts/verify-m3.mjs` | Server-HTML checks (start `npm start` first) |
+| `node scripts/verify-browser.mjs` | Headless-Chrome UI checks (start `npm start` first) |
+
+The two `verify-*` scripts expect a production server on port 3100:
+
+```sh
+npm run build
+(npx next start -p 3100 > /tmp/digsync-server.log 2>&1 &)
+node scripts/verify-m3.mjs      # server-rendered HTML
+node scripts/verify-browser.mjs # real browser: popups, filters, sort, toggle
+```
 
 Health check (demo mode is the default with no env vars set):
 
