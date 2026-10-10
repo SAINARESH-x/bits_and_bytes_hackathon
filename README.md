@@ -64,11 +64,41 @@ _(Built across milestones M1–M8.)_
   as **⚠ badges on the map polylines**; as clash counts in the project list and
   table; and as a **Clash alerts** section on every project page. `GET
   /api/clashes` serves the same board as cacheable JSON.
-- Live clash preview while creating/editing a project. _(M5.)_
+- Live clash preview while creating a project. _(M5 — done in `/console`.)_
 - Citizen layer: follow, geotagged issue reports, confirm/dispute completion.
   _(M6 — placeholder on the detail page.)_
 - Transparency dashboard: delays, repeat digs, contested completions,
   per-department scorecard.
+
+## Department console (`/console`)
+
+The demo stand-in for the official flow, gated by the shared
+`DEMO_PASSCODE` env var (server-side check, **httpOnly** session cookie, and a
+5-attempts-per-15-minutes per-IP rate limit on the login). With the variable
+unset the console is disabled outright — there is no open-by-default fallback.
+Everything written here goes to the same simulated registry that backs the
+public site: a project created in the console appears on the map, in the list,
+and on the clash board immediately (in demo mode these in-memory rows reset
+when the server restarts).
+
+- **New Project form** — Zod-validated (same schema client and server) with a
+  **live clash preview** panel that re-runs the pure clash engine against the
+  registry as you edit road segment, department, dates, status and budget, so
+  an overlap or repeat-dig warning — with the engine's coordination suggestion
+  — appears *before* the project is saved. Impossible calendar dates
+  (e.g. `2026-02-30`) and inverted windows are rejected by the shared schema
+  and flagged in the preview.
+- **Add Update form** — appends a row to a project's permanent status history
+  (updates are **append-only**; nothing edits or deletes an existing entry).
+  When the selected project is past its planned end, a **delay reason is
+  required** — enforced in the form and re-checked server-side against the
+  server's own clock.
+
+**Scope note:** in production this console would use real authentication —
+Supabase Auth with role-based access and RLS-backed writes — rather than a
+shared passcode. The passcode + httpOnly cookie is the hackathon stand-in, and
+the data-honesty rules (see [Simulated data disclosure](#simulated-data-disclosure))
+apply to everything created through it.
 
 ## How the clash engine decides
 
@@ -103,11 +133,18 @@ disclosure that no spatial library is doing the work.
 app/(public)/           Public routes: /, /map, /projects, /projects/[id], /clashes
 app/(public)/*/loading, error, not-found
                         Per-route skeleton, retryable error and 404 states
+app/console/            Department console (DEMO_PASSCODE gate): new project
+                        with live clash preview + append-only status updates
 app/api/health/         Health endpoint reporting demo | supabase mode
 app/api/clashes/        GET the computed clash board as cacheable JSON
+app/api/console/        login / logout / projects / updates (server-validated)
 components/             UI. Leaflet lives behind next/dynamic (ssr: false);
                         the legend and text list render in server HTML
 lib/data.ts             Data access: Supabase when configured, seed.json otherwise
+lib/console-auth.ts     Server-only console session: HMAC passcode + httpOnly
+                        cookie + constant-time compare (demo-grade, not prod)
+lib/console-rate-limit.ts  Per-IP sliding window on failed logins
+lib/console-api.ts      Shared JSON error shapes for the console routes
 lib/filters.ts          Pure filter/sort state shared by /map and /projects
 lib/map-lines.ts        Pure polyline builder: groups projects per segment and
                         offsets overlapping lines so each stays clickable
@@ -160,6 +197,7 @@ git clone git@github.com:SAINARESH-x/bits_and_bytes_hackathon.git
 cd bits_and_bytes_hackathon
 npm install
 cp .env.example .env.local   # optional — leave blank for demo mode
+# To use /console, set DEMO_PASSCODE (e.g. `echo "DEMO_PASSCODE=digsync-demo" >> .env.local`)
 npm run dev                  # http://localhost:3000
 ```
 
@@ -213,6 +251,13 @@ duplicated pairs, determinism (same input → same order), a 500-project
 performance budget, and the flagship seed story (a water pipeline on Amber
 Garden Road followed by a power cable 91 days later). `tests/clash-view.test.ts`
 covers the browser-safe helpers and the API payload summary.
+`tests/console-auth.test.ts` covers the passcode verification, session-cookie
+digest and the rate limiter (boundaries, window expiry, reset), plus the login
+route's disabled / wrong-passcode / rate-limited / success paths and the
+console create route's 401 guard. `tests/console-schemas.test.ts` covers the
+console update schema (a delay reason is allowed alongside any status), the
+past-planned-end rule, and the shared schema now rejecting impossible calendar
+dates like `2026-02-30`.
 
 ## Demo video
 

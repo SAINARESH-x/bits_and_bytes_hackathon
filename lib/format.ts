@@ -108,6 +108,15 @@ export function todayISO(): string {
   ).padStart(2, "0")}`;
 }
 
+/**
+ * Today in UTC as YYYY-MM-DD — the instant the server uses for the "past its
+ * planned end" rule, shared with the console form so the two cannot disagree
+ * about whether a project is late.
+ */
+export function todayUTCISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 /** Today plus `days`, as YYYY-MM-DD, in the local calendar. */
 export function addDaysISO(days: number): string {
   const d = new Date();

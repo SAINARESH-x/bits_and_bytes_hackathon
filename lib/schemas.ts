@@ -15,9 +15,21 @@ import { z } from "zod";
 
 export const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * "2026-02-30" passes the shape regex but is not a calendar day. The
+ * round-trip check (parse, then re-serialize) rejects impossible dates the
+ * same way the clash engine does in lib/clash/window.ts — a typo must fail
+ * validation, not silently become 2 March.
+ */
+function isValidCalendarDay(value: string): boolean {
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 const dateOnly = z
   .string()
-  .regex(DATE_ONLY, "Expected a date in YYYY-MM-DD format");
+  .regex(DATE_ONLY, "Expected a date in YYYY-MM-DD format")
+  .refine(isValidCalendarDay, "Not a real calendar day");
 
 /** Optional date: allow "" from a form, normalise to null. */
 const dateOnlyOptional = z.preprocess(
@@ -146,6 +158,48 @@ export const projectUpdateInputSchema = z
   });
 
 export type ProjectUpdateInput = z.infer<typeof projectUpdateInputSchema>;
+
+/**
+ * The console's update payload.
+ *
+ * Unlike the public schema, a delay_reason is allowed alongside ANY status:
+ * the console's rule — "a delay reason is REQUIRED once a project is past its
+ * planned end" — applies equally to a late completion or a still-running job,
+ * not just a stall. Whether the project actually IS past due is server-side
+ * context (the payload does not carry the project's planned end), so that half
+ * of the rule lives in the route handler and is mirrored by the Add Update
+ * form. Empty note / reason / end-date values from a form normalise to null.
+ */
+export const consoleProjectUpdateInputSchema = z.object({
+  project_id: z.string().uuid(),
+  status: projectStatusEnum,
+  note: z.preprocess(
+    (v) => (v === "" || v === undefined ? null : v),
+    z.string().trim().max(1000, "Note is too long").nullable(),
+  ),
+  delay_reason: z.preprocess(
+    (v) => (v === "" || v === undefined ? null : v),
+    delayReasonEnum.nullable(),
+  ),
+  new_planned_end: dateOnlyOptional,
+});
+
+export type ConsoleProjectUpdateInput = z.infer<
+  typeof consoleProjectUpdateInputSchema
+>;
+
+/**
+ * Is a project past its planned end? `today` is the UTC YYYY-MM-DD string the
+ * server (and the mirrored form) uses as "now". Strictly-after: a project
+ * whose planned end is today is not yet late. YYYY-MM-DD strings compare
+ * correctly with plain lexicographic `<`, so no date parsing is needed.
+ */
+export function isPastPlannedEnd(
+  plannedEnd: string | null | undefined,
+  today: string,
+): boolean {
+  return typeof plannedEnd === "string" && plannedEnd !== "" && today > plannedEnd;
+}
 
 // ---------------------------------------------------------------------------
 // Citizen reports

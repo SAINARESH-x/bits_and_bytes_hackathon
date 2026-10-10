@@ -144,6 +144,16 @@ export function createSeedStore(now: Date = new Date()): DataStore {
         created_at: new Date().toISOString(),
       };
       updates.push(update);
+
+      // The update LOG is append-only, but the project row is the CURRENT
+      // state, so applying the new status (and a revised end date, when the
+      // update carries one) keeps the registry coherent in demo mode. The
+      // Supabase path would do this in one transaction with a project update.
+      const project = projects.find((p) => p.id === input.project_id);
+      if (project) {
+        project.status = input.status;
+        if (input.new_planned_end) project.planned_end = input.new_planned_end;
+      }
       return update;
     },
 
@@ -304,6 +314,19 @@ function hasSupabaseEnv(): boolean {
 }
 
 /**
+ * The process-wide demo store.
+ *
+ * Memoized at module scope (one per process) so writes made through the
+ * console — a created project, a status update — survive across requests in
+ * demo mode, exactly what the PLAN's "local seed store" calls for. It is
+ * still in-memory: restarting the server (or a fresh deployment) returns to a
+ * clean seed, and rows keep is_simulated=true because nothing is persisted.
+ * Seed dates resolve against the instant the store is first created; for a
+ * demo that lives for hours that freeze is invisible.
+ */
+let demoStore: DataStore | null = null;
+
+/**
  * The store the app should use.
  *
  * Supabase env present -> Supabase, unless the credentials are unusable, in
@@ -311,15 +334,23 @@ function hasSupabaseEnv(): boolean {
  * this; they just call the methods.
  */
 export async function getDataStore(): Promise<DataStore> {
-  if (!hasSupabaseEnv()) return createSeedStore();
+  if (!hasSupabaseEnv()) {
+    demoStore ??= createSeedStore();
+    return demoStore;
+  }
 
   const supabase = createSupabaseStore();
-  if (!supabase) return createSeedStore();
+  if (!supabase) {
+    demoStore ??= createSeedStore();
+    return demoStore;
+  }
 
   // Cheap probe: if the DB is unreachable or the schema isn't loaded, fall
   // back so the app keeps working rather than rendering errors.
   const probe = await supabase.listProjects();
-  return probe.length > 0 ? supabase : createSeedStore();
+  if (probe.length > 0) return supabase;
+  demoStore ??= createSeedStore();
+  return demoStore;
 }
 
 // ---------------------------------------------------------------------------

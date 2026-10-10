@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/clashes", label: "Clashes" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/report", label: "Report" },
+  { href: "/console", label: "Console" },
 ] as const;
 
 export function SiteHeader() {

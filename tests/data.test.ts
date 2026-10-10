@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createSeedStore,
   getDataMode,
+  getDataStore,
   listProjects,
   listSegments,
 } from "@/lib/data";
@@ -160,6 +161,74 @@ describe("listProjects / listSegments convenience API", () => {
   it("resolves without a network call in demo mode", async () => {
     await expect(listProjects()).resolves.toHaveLength(39);
     await expect(listSegments()).resolves.toHaveLength(12);
+  });
+});
+
+// NOTE: the two describes below mutate the *shared* demo store via
+// getDataStore(), so they intentionally live LAST in this file — the count
+// assertions above must run against the pristine seed.
+
+describe("demo store updates are append-only", () => {
+  it("appends distinct rows and applies the new status to the project", async () => {
+    const store = createSeedStore();
+    const target = (await store.listProjects()).find((p) => p.planned_end)!;
+
+    const first = await store.addUpdate({
+      project_id: target.id,
+      status: "stalled",
+      note: "Contractor machine broke",
+      delay_reason: "contractor_delay",
+      new_planned_end: "2027-01-01",
+    });
+    const second = await store.addUpdate({
+      project_id: target.id,
+      status: "in_progress",
+      note: null,
+      delay_reason: "monsoon",
+      new_planned_end: null,
+    });
+
+    expect(first.id).not.toBe(second.id);
+    const updates = await store.listUpdates(target.id);
+    const mine = updates.filter((u) => u.id === first.id || u.id === second.id);
+    expect(mine).toHaveLength(2);
+
+    // The store receives schema-normalised rows (empty strings become null
+    // in consoleProjectUpdateInputSchema before they reach this call).
+    expect(second.note).toBeNull();
+
+    // The log is append-only, but the project row reflects the latest state.
+    const after = await store.getProject(target.id);
+    expect(after?.status).toBe("in_progress");
+    expect(after?.planned_end).toBe("2027-01-01");
+  });
+});
+
+describe("demo store is shared within a process", () => {
+  it("keeps a console-created project visible to later getDataStore() calls", async () => {
+    const storeA = await getDataStore();
+    const storeB = await getDataStore();
+    expect(storeA).toBe(storeB);
+
+    const [segment] = await storeA.listSegments();
+    const [department] = await storeA.listDepartments();
+    const created = await storeA.createProject({
+      title: "Console-created work",
+      purpose: "Verifies demo writes survive across requests.",
+      project_type: "fibre",
+      department_id: department.id,
+      road_segment_id: segment.id,
+      status: "planned",
+      planned_start: null,
+      planned_end: null,
+      actual_start: null,
+      actual_end: null,
+      contractor_name: null,
+      budget_inr: null,
+    });
+
+    const projects = await storeB.listProjects();
+    expect(projects.some((p) => p.id === created.id)).toBe(true);
   });
 });
 
