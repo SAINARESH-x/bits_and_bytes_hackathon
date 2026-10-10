@@ -31,6 +31,13 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Anything that cannot be an id is rejected before the data layer is touched,
+ * mirroring the project detail page. Demo ids are `proj-…` slug-style strings
+ * (not UUIDs), so this is a permissive shape check, not `.uuid()`.
+ */
+const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
+
 function honeypotTripped(body: unknown): boolean {
   if (!body || typeof body !== "object") return false;
   const value = (body as Record<string, unknown>).hp;
@@ -46,6 +53,9 @@ export async function POST(request: Request, context: RouteContext) {
   if (!limit.allowed) return rateLimited(limit);
 
   const { id } = await context.params;
+  if (!ID_PATTERN.test(id)) {
+    return apiError(404, "project_not_found", "No project has that id.");
+  }
 
   let body: unknown;
   try {

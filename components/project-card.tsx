@@ -7,7 +7,9 @@ import {
   formatDate,
   formatINR,
   relativeDays,
+  todayUTCISO,
 } from "@/lib/format";
+import { isPastPlannedEnd } from "@/lib/schemas";
 import type { Department, Project, RoadSegment } from "@/lib/types";
 
 interface ProjectCardProps {
@@ -28,10 +30,12 @@ export function ProjectCard({
   segment,
   clashCount = 0,
 }: ProjectCardProps) {
-  const late = project.status !== "cancelled" &&
-    project.planned_end &&
+  // Same UTC string comparison the console's "past its planned end" rule uses,
+  // so the card, the form and the server can never disagree about "late".
+  const late =
+    project.status !== "cancelled" &&
     !project.actual_end &&
-    new Date(`${project.planned_end}T00:00:00Z`) < new Date();
+    isPastPlannedEnd(project.planned_end, todayUTCISO());
 
   return (
     <li>
@@ -40,7 +44,7 @@ export function ProjectCard({
         className="block rounded-lg border border-neutral-200 p-4 transition-colors hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold">{project.title}</span>
+          <span className="break-words font-semibold">{project.title}</span>
           <span
             className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[project.status]}`}
           >

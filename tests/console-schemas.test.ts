@@ -111,3 +111,48 @@ describe("projectInputSchema rejects impossible dates", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("projectInputSchema length bounds", () => {
+  const base = {
+    title: "Test work",
+    purpose: "Exercise length validation.",
+    project_type: "road",
+    department_id: "a0000001-0000-4000-8000-000000000001",
+    road_segment_id: "b0000002-0000-4000-8000-000000000001",
+    status: "planned",
+  };
+
+  it("accepts a 200-character title and rejects 201", () => {
+    const atBoundary = projectInputSchema.safeParse({
+      ...base,
+      title: "T".repeat(200),
+    });
+    expect(atBoundary.success).toBe(true);
+
+    const over = projectInputSchema.safeParse({
+      ...base,
+      title: "T".repeat(201),
+    });
+    expect(over.success).toBe(false);
+    expect(
+      over.success ? [] : over.error.issues.map((issue) => issue.path.join(".")),
+    ).toContain("title");
+  });
+
+  it("accepts a 2000-character purpose and rejects 2001", () => {
+    const atBoundary = projectInputSchema.safeParse({
+      ...base,
+      purpose: "P".repeat(2000),
+    });
+    expect(atBoundary.success).toBe(true);
+
+    const over = projectInputSchema.safeParse({
+      ...base,
+      purpose: "P".repeat(2001),
+    });
+    expect(over.success).toBe(false);
+    expect(
+      over.success ? [] : over.error.issues.map((issue) => issue.path.join(".")),
+    ).toContain("purpose");
+  });
+});

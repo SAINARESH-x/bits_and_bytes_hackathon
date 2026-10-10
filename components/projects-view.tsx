@@ -229,7 +229,7 @@ export function ProjectsView({
                     <td className="px-3 py-2">
                       <a
                         href={`/projects/${project.id}`}
-                        className="font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                        className="break-words font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                       >
                         {project.title}
                       </a>

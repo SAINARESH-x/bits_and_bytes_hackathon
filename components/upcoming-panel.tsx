@@ -154,7 +154,7 @@ export function UpcomingPanel({ projects, segments, departments }: UpcomingPanel
                   className="block rounded border border-neutral-200 p-3 hover:border-neutral-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-neutral-800 dark:hover:border-neutral-600"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-sm font-medium leading-snug">
+                    <span className="break-words text-sm font-medium leading-snug">
                       <span aria-hidden="true">{style.symbol}</span> {project.title}
                     </span>
                     <span

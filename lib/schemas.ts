@@ -90,8 +90,16 @@ export const deviceIdSchema = z
 /** `id` is omitted on create; the DB generates it. */
 export const projectInputSchema = z
   .object({
-    title: z.string().trim().min(3, "Title must be at least 3 characters"),
-    purpose: z.string().trim().min(3, "Purpose must be at least 3 characters"),
+    title: z
+      .string()
+      .trim()
+      .min(3, "Title must be at least 3 characters")
+      .max(200, "Title must be under 200 characters"),
+    purpose: z
+      .string()
+      .trim()
+      .min(3, "Purpose must be at least 3 characters")
+      .max(2000, "Purpose must be under 2000 characters"),
     project_type: projectTypeEnum,
     department_id: z.string().uuid("Unknown department"),
     contractor_name: z

@@ -83,7 +83,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
       <header className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
+          <h1 className="break-words text-2xl font-bold tracking-tight">{project.title}</h1>
           <span
             className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[project.status]}`}
           >

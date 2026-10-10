@@ -907,3 +907,230 @@ describe("flagship seed story", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Window edge cases
+// ---------------------------------------------------------------------------
+
+/**
+ * The engine's contract on awkward windows, pinned as regression tests:
+ * zero-length jobs, year boundaries and projects with no plan at all must
+ * behave exactly like the documented rules — never silently collapse.
+ */
+describe("window edge cases", () => {
+  it("counts two zero-length (same-day) windows as one day of overlap", () => {
+    const projects = [
+      project({ id: "a", planned_start: "2026-01-10", planned_end: "2026-01-10" }),
+      project({
+        id: "b",
+        department_id: "dept-power",
+        planned_start: "2026-01-10",
+        planned_end: "2026-01-10",
+      }),
+    ];
+    const result = detectClashes(projects, [segment("seg-1", LINE_ORIGIN)], { now: NOW });
+
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("CONCURRENT_OVERLAP");
+    expect(result.clashes[0].overlapDays).toBe(1);
+    expect(result.skipped).toEqual([]);
+  });
+
+  it("treats a zero-length job followed the next day as a 1-day repeat dig", () => {
+    const projects = [
+      project({
+        id: "p-first",
+        title: "Road restored",
+        project_type: "road",
+        department_id: "dept-roads",
+        status: "completed",
+        planned_start: "2026-01-31",
+        planned_end: "2026-01-31",
+        actual_start: "2026-01-31",
+        actual_end: "2026-01-31",
+      }),
+      project({
+        id: "p-second",
+        department_id: "dept-power",
+        planned_start: "2026-02-01",
+        planned_end: "2026-02-21",
+      }),
+    ];
+    const result = detectClashes(projects, [segment("seg-1", LINE_ORIGIN)], { now: NOW });
+
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("REPEAT_DIG");
+    expect(result.clashes[0].gapDays).toBe(1);
+  });
+
+  it("flags a repeat dig across two adjacent segments", () => {
+    const projects = [
+      project({
+        id: "p-first",
+        title: "Road restored",
+        project_type: "road",
+        department_id: "dept-roads",
+        status: "completed",
+        planned_start: "2026-01-01",
+        planned_end: "2026-01-31",
+        actual_start: "2026-01-01",
+        actual_end: "2026-01-31",
+        road_segment_id: "seg-1",
+      }),
+      project({
+        id: "p-second",
+        department_id: "dept-power",
+        road_segment_id: "seg-2",
+        planned_start: "2026-03-01",
+        planned_end: "2026-03-21",
+      }),
+    ];
+    const result = detectClashes(
+      projects,
+      [segment("seg-1", LINE_ORIGIN), segment("seg-2", LINE_30M)],
+      { now: NOW },
+    );
+
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("REPEAT_DIG");
+    expect(result.clashes[0].gapDays).toBe(29);
+    expect(result.clashes[0].segmentId).toBe("seg-1");
+    expect(result.clashes[0].explanation).toContain("next to");
+  });
+
+  it("forces a same-department repeat dig to low severity", () => {
+    const projects = [
+      project({
+        id: "p-first",
+        project_type: "road",
+        department_id: "dept-roads",
+        status: "completed",
+        planned_start: "2026-01-01",
+        planned_end: "2026-01-31",
+        actual_start: "2026-01-01",
+        actual_end: "2026-01-31",
+      }),
+      project({
+        id: "p-second",
+        department_id: "dept-roads",
+        planned_start: "2026-03-01",
+        planned_end: "2026-03-21",
+      }),
+    ];
+    const result = detectClashes(projects, [segment("seg-1", LINE_ORIGIN)], { now: NOW });
+
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("REPEAT_DIG");
+    expect(result.clashes[0].severity).toBe("low");
+  });
+
+  it("resolves a project that records only actual dates", () => {
+    const projects = [
+      project({
+        id: "p-first",
+        title: "Road restored",
+        project_type: "road",
+        department_id: "dept-roads",
+        status: "completed",
+        planned_start: null,
+        planned_end: null,
+        actual_start: "2026-01-01",
+        actual_end: "2026-01-31",
+      }),
+      project({
+        id: "p-second",
+        department_id: "dept-power",
+        planned_start: "2026-03-01",
+        planned_end: "2026-03-21",
+      }),
+    ];
+    const result = detectClashes(projects, [segment("seg-1", LINE_ORIGIN)], { now: NOW });
+
+    expect(result.skipped).toEqual([]);
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("REPEAT_DIG");
+    expect(result.clashes[0].gapDays).toBe(29);
+  });
+
+  it("measures a gap across a year boundary", () => {
+    const projects = [
+      project({
+        id: "p-first",
+        project_type: "road",
+        department_id: "dept-roads",
+        status: "completed",
+        planned_start: "2025-12-01",
+        planned_end: "2025-12-31",
+        actual_start: "2025-12-01",
+        actual_end: "2025-12-31",
+      }),
+      project({
+        id: "p-second",
+        department_id: "dept-power",
+        planned_start: "2026-01-02",
+        planned_end: "2026-01-22",
+      }),
+    ];
+    const result = detectClashes(projects, [segment("seg-1", LINE_ORIGIN)], { now: NOW });
+
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("REPEAT_DIG");
+    expect(result.clashes[0].gapDays).toBe(2);
+  });
+
+  it("counts an inclusive touching overlap across a year boundary", () => {
+    const projects = [
+      project({ id: "a", planned_start: "2025-12-30", planned_end: "2025-12-31" }),
+      project({
+        id: "b",
+        department_id: "dept-power",
+        planned_start: "2025-12-31",
+        planned_end: "2026-01-01",
+      }),
+    ];
+    const result = detectClashes(projects, [segment("seg-1", LINE_ORIGIN)], { now: NOW });
+
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("CONCURRENT_OVERLAP");
+    expect(result.clashes[0].overlapDays).toBe(1);
+  });
+
+  it("proposes the union window covering both works for a repeat dig", () => {
+    const result = detectClashes(
+      [
+        project({
+          id: "a",
+          title: "Road restored",
+          project_type: "road",
+          department_id: "dept-roads",
+          planned_start: "2026-01-01",
+          planned_end: "2026-01-31",
+          budget_inr: 4_000_000,
+        }),
+        project({
+          id: "b",
+          title: "Cable dug",
+          department_id: "dept-power",
+          planned_start: plus("2026-01-31", 30),
+          planned_end: plus("2026-01-31", 50),
+          budget_inr: 3_000_000,
+        }),
+      ],
+      [segment("seg-1", LINE_ORIGIN)],
+      { now: NOW },
+    );
+
+    expect(result.clashes).toHaveLength(1);
+    expect(result.clashes[0].type).toBe("REPEAT_DIG");
+    expect(result.clashes[0].gapDays).toBe(30);
+
+    const proposal = proposeCoordination(result.clashes[0]);
+    expect(proposal.proposedWindow).toEqual({
+      start: "2026-01-01",
+      // Jan 31 + 50 days = 22 Mar 2026 — the union of both works' windows.
+      end: "2026-03-22",
+    });
+    expect(proposal.action).toBe("merge");
+    expect(proposal.savesDig).toBe(true);
+  });
+});

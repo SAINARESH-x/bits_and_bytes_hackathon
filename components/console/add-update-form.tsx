@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { friendlyError, postJson } from "@/lib/api-client";
 import { DELAY_REASON_LABELS, STATUS_LABELS, todayUTCISO } from "@/lib/format";
 import {
   consoleProjectUpdateInputSchema,
@@ -117,37 +118,32 @@ export function AddUpdateForm({ projects }: AddUpdateFormProps) {
 
     setPending(true);
     try {
-      const response = await fetch("/api/console/updates", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
-      const payload = (await response.json().catch(() => null)) as {
-        issues?: { path: string; message: string }[];
-        message?: string;
-        update?: ProjectUpdate;
-      } | null;
+      // Same postJson-without-retry contract as the New Project form: updates
+      // are append-only, so a retry after a lost response could double-log.
+      const result = await postJson<{ update?: ProjectUpdate }>(
+        "/api/console/updates",
+        parsed.data,
+        { retries: 0 },
+      );
 
-      if (!response.ok) {
-        if (response.status === 401) {
+      if (!result.ok) {
+        if (result.status === 401) {
           setSubmitError("Your console session has expired. Sign in again.");
-        } else if (payload?.issues?.length) {
-          applyIssues(payload.issues);
+        } else if (result.issues?.length) {
+          applyIssues(result.issues);
         } else {
-          setSubmitError(payload?.message ?? "Could not save the update.");
+          setSubmitError(friendlyError(result));
         }
         return;
       }
 
-      setSuccess(payload?.update ?? null);
+      setSuccess(result.data?.update ?? null);
       setNote("");
       setDelayReason("");
       setNewPlannedEnd("");
       // The store applies the new status to the project row, so refresh the
       // server components to show it (timeline, status select).
       router.refresh();
-    } catch {
-      setSubmitError("Could not reach the server. Try again.");
     } finally {
       setPending(false);
     }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { postJson } from "@/lib/api-client";
 
 /** POST /api/console/logout, then re-render the server component (login form). */
 export function LogoutButton() {
@@ -12,10 +13,12 @@ export function LogoutButton() {
     if (pending) return;
     setPending(true);
     try {
-      await fetch("/api/console/logout", { method: "POST" });
-    } catch {
-      // The cookie may still be dropped next refresh; either way we end up
-      // back at the login screen, so there is nothing actionable to show.
+      // postJson with retries:0 — logout is idempotent but a retry is never
+      // needed: the cookie is cleared on the FIRST attempt even if the
+      // response is lost; router.refresh() below lands on the login screen
+      // either way. The timeout just guarantees a wedged request cannot leave
+      // the button stuck on "Signing out…".
+      await postJson("/api/console/logout", {}, { retries: 0 });
     } finally {
       setPending(false);
       router.refresh();

@@ -7,6 +7,7 @@ import {
   ClashPreview,
   CONSOLE_DRAFT_ID,
 } from "@/components/console/clash-preview";
+import { friendlyError, postJson } from "@/lib/api-client";
 import type { Project as EngineProject } from "@/lib/clash/types";
 import { PROJECT_TYPE_LABELS, STATUS_LABELS } from "@/lib/format";
 import { projectInputSchema } from "@/lib/schemas";
@@ -42,11 +43,6 @@ const STATUSES: ProjectStatus[] = [
   "completed",
   "cancelled",
 ];
-
-interface ServerIssues {
-  issues?: { path: string; message: string }[];
-  message?: string;
-}
 
 interface NewProjectFormProps {
   projects: readonly RegistryProject[];
@@ -160,32 +156,34 @@ export function NewProjectForm({
 
     setPending(true);
     try {
-      const response = await fetch("/api/console/projects", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      });
-      const payload = (await response.json().catch(() => null)) as
-        | (ServerIssues & { project?: RegistryProject })
-        | null;
+      // postJson never throws — a hang is turned into a timeout and comes
+      // back as network:true — so the button can never spin forever. retries:0
+      // because creating a project is not idempotent: a retry after a lost
+      // response could create the same project twice.
+      const result = await postJson<{ project?: RegistryProject }>(
+        "/api/console/projects",
+        parsed.data,
+        { retries: 0 },
+      );
 
-      if (!response.ok) {
-        if (response.status === 401) {
+      if (!result.ok) {
+        if (result.status === 401) {
           setSubmitError("Your console session has expired. Sign in again.");
-        } else if (payload?.issues?.length) {
-          applyIssues(payload.issues);
+        } else if (result.issues?.length) {
+          applyIssues(result.issues);
         } else {
-          setSubmitError(payload?.message ?? "Could not save the project.");
+          setSubmitError(friendlyError(result));
         }
         return;
       }
 
-      if (!payload?.project) {
+      const project = result.data?.project;
+      if (!project) {
         setSubmitError("The project was saved but the response was empty.");
         return;
       }
 
-      setSuccess(payload.project);
+      setSuccess(project);
       // Fresh-start the form, keep the form mounted so the preview and the
       // other console form see the new registry row via router.refresh().
       setTitle("");
@@ -196,8 +194,6 @@ export function NewProjectForm({
       setBudget("");
       setStatus("planned");
       router.refresh();
-    } catch {
-      setSubmitError("Could not reach the server. Try again.");
     } finally {
       setPending(false);
     }

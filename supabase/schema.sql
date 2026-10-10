@@ -109,7 +109,15 @@ create table projects (
     check (actual_end is null or actual_start is null
            or actual_end >= actual_start),
   constraint budget_positive
-    check (budget_inr is null or budget_inr >= 0)
+    check (budget_inr is null or budget_inr >= 0),
+  -- Length mirrors stay in lockstep with lib/schemas.ts (Zod): the server
+  -- rejects first with a readable message, the DB is the backstop.
+  constraint title_length
+    check (char_length(title) between 3 and 200),
+  constraint purpose_length
+    check (char_length(purpose) between 3 and 2000),
+  constraint contractor_length
+    check (contractor_name is null or char_length(contractor_name) <= 120)
 );
 
 -- Append-only status log. Rows are never updated or deleted — this is the
@@ -122,7 +130,10 @@ create table project_updates (
   delay_reason delay_reason,
   new_planned_end date,
   is_simulated boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Length mirror of lib/schemas.ts.
+  constraint note_length
+    check (note is null or char_length(note) <= 1000)
 );
 
 -- project_id is NULL for an UNLISTED work: a citizen spotted digging that is
@@ -141,7 +152,10 @@ create table citizen_reports (
   constraint lng_in_range check (lng between -180 and 180),
   -- An unlisted report, by definition, points at no project.
   constraint unlisted_has_no_project
-    check (not is_unlisted_work or project_id is null)
+    check (not is_unlisted_work or project_id is null),
+  -- Length mirror of lib/schemas.ts.
+  constraint description_length
+    check (char_length(description) between 10 and 500)
 );
 
 -- One vote per device per project. `device_id` is a client-generated UUID in

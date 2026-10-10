@@ -170,7 +170,7 @@ export function FollowingView({
                       {STATUS_LABELS[project.status]}
                     </span>
                   </div>
-                  <h3 className="mt-1 text-base font-semibold">
+                  <h3 className="mt-1 break-words text-base font-semibold">
                     <Link
                       href={`/projects/${project.id}`}
                       className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"

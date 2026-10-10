@@ -97,30 +97,35 @@ export function formatINR(value: number | null | undefined): string {
   }).format(value);
 }
 
-/** Today as YYYY-MM-DD in the local calendar. */
-export function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
-}
-
 /**
- * Today in UTC as YYYY-MM-DD — the instant the server uses for the "past its
- * planned end" rule, shared with the console form so the two cannot disagree
- * about whether a project is late.
+ * Today in the UTC calendar as YYYY-MM-DD.
+ *
+ * Deliberately UTC, not the server's local timezone: the clash engine
+ * (lib/clash/window.ts), the seed resolver (lib/seed-dates.ts) and the
+ * timestamps the store writes all use UTC midnights, so "today" must too or
+ * the Upcoming panel and the console's "past its planned end" rule would
+ * disagree with the engine about the same date near midnight (IST is UTC+5:30,
+ * so a deployment at 23:00 local can be a different DT local and UTC day).
+ * One anchor everywhere is the only way the two stay consistent.
  */
-export function todayUTCISO(): string {
+export function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Today plus `days`, as YYYY-MM-DD, in the local calendar. */
+/**
+ * Today in UTC as YYYY-MM-DD — identical to `todayISO()` by design. The name
+ * exists so callers that specifically mean "the instant the server uses for
+ * date rules" can say so without implying a second clock.
+ */
+export function todayUTCISO(): string {
+  return todayISO();
+}
+
+/** Today plus `days`, as YYYY-MM-DD, in the UTC calendar. */
 export function addDaysISO(days: number): string {
   const d = new Date();
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate(),
-  ).padStart(2, "0")}`;
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }
 
 /**
@@ -183,14 +188,18 @@ export const STATUS_MAP_STYLE: Record<ProjectStatus, MapLineStyle> = {
  * How late a project is against its own plan, in days.
  * 0 means on time or no baseline to compare against.
  */
-export function overrunDays(project: {
-  planned_end: string | null;
-  actual_end: string | null;
-  status: ProjectStatus;
-}): number {
+export function overrunDays(
+  project: {
+    planned_end: string | null;
+    actual_end: string | null;
+    status: ProjectStatus;
+  },
+  /** The instant "today" is compared against. Inject for deterministic tests. */
+  now: Date = new Date(),
+): number {
   if (!project.planned_end) return 0;
-  // Still open: compare the plan against today.
-  const end = project.actual_end ?? new Date().toISOString().slice(0, 10);
+  // Still open: compare the plan against `now` (today by default).
+  const end = project.actual_end ?? now.toISOString().slice(0, 10);
   if (project.status === "cancelled") return 0;
   const diff = Math.round(
     (new Date(`${end}T00:00:00Z`).getTime() -

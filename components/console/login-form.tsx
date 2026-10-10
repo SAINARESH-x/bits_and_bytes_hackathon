@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { friendlyError, postJson } from "@/lib/api-client";
 
 const CONTROL =
   "w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 " +
@@ -33,21 +34,19 @@ export function LoginForm() {
     setPending(true);
     setError(null);
     try {
-      const response = await fetch("/api/console/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ passcode }),
-      });
-      if (response.ok) {
+      // postJson applies a timeout and reports a hung request as network:true,
+      // so the button cannot stick on "Checking…" — with retries:0 a stalled
+      // login is surfaced once instead of hammered.
+      const result = await postJson<{ message?: string }>(
+        "/api/console/login",
+        { passcode },
+        { retries: 0 },
+      );
+      if (result.ok) {
         router.refresh();
         return;
       }
-      const payload = (await response.json().catch(() => null)) as {
-        message?: string;
-      } | null;
-      setError(payload?.message ?? "Could not sign in. Please try again.");
-    } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+      setError(result.message ?? friendlyError(result));
     } finally {
       setPending(false);
     }
