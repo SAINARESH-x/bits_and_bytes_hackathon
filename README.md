@@ -16,7 +16,7 @@ delays, repeat digs and contested completions.
 
 | | |
 | --- | --- |
-| 🚀 **Live demo** | https://geomesh-civic.vercel.app |
+| 🚀 **Live demo** | https://geomesh-app.vercel.app |
 | 🎬 **Demo video** | [https://youtu.be/38Rogm0bb0U](https://youtu.be/38Rogm0bb0U) |
 | 🗺️ **Repository** | [`SAINARESH-x/GeoMesh`](https://github.com/SAINARESH-x/GeoMesh) |
 | 👤 **Author** | SAI NARESH P · Roll No: EC24B1038 |
